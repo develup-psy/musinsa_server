@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,6 +26,7 @@ import java.util.List;
 // 사용자 장바구니 CRUD를 노출하는 컨트롤러이다.
 @RestController
 @RequiredArgsConstructor
+@PreAuthorize("isAuthenticated()")
 @RequestMapping("/api/cart")
 public class CartController {
 

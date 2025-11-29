@@ -18,7 +18,10 @@ class EventImageTest {
         Boolean isThumbnail = true;
 
         // when : 시나리오 행동 진행
-        EventImage eventImage = EventImage.create(imageUrl, isThumbnail);
+        EventImage eventImage = EventImage.builder()
+                .imageUrl(imageUrl)
+                .isThumbnail(isThumbnail)
+                .build();
 
         // then: 시나리오 진행에 대한 결과 명시 , 검증
         assertThat(eventImage).isNotNull();
@@ -34,7 +37,10 @@ class EventImageTest {
         Boolean isThumbnail = false;
 
         // when
-        EventImage eventImage = EventImage.create(imageUrl, isThumbnail);
+        EventImage eventImage = EventImage.builder()
+                .imageUrl(imageUrl)
+                .isThumbnail(isThumbnail)
+                .build();
 
         // then
         assertThat(eventImage).isNotNull();
@@ -48,17 +54,20 @@ class EventImageTest {
         // given
         LocalDateTime startedAt = LocalDateTime.of(2025, 11, 20, 0, 0);
         LocalDateTime endedAt = LocalDateTime.of(2025, 12, 20, 23, 59);
-        Event event = Event.create(
-                "테스트 이벤트",
-                "설명",
-                Event.EventType.DROP,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                null
-        );
-        EventImage eventImage = EventImage.create("https://example.com/image.jpg", true);
+        Event event = Event.builder()
+                .title("테스트 이벤트")
+                .description("설명")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(null)
+                .build();
+        EventImage eventImage = EventImage.builder()
+                .imageUrl("https://example.com/image.jpg")
+                .isThumbnail(true)
+                .build();
 
         // when
         eventImage.assignEvent(event);

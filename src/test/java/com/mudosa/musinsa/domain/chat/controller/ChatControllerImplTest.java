@@ -38,31 +38,31 @@ class ChatControllerImplTest extends ControllerTestSupport {
   /* === Test Helper === */
   private ChatRoomInfoResponse createChatRoomInfoResponse(Long chatId) {
     return ChatRoomInfoResponse.builder()
-        .brandId(1L)
-        .chatId(chatId)
-        .type(ChatRoomType.GROUP)
-        .brandNameKo("브랜드")
-        .isParticipate(true)
-        .partNum(2L)
-        .build();
+            .brandId(1L)
+            .chatId(chatId)
+            .type(ChatRoomType.GROUP)
+            .brandNameKo("브랜드")
+            .isParticipate(true)
+            .partNum(2L)
+            .build();
   }
 
   private MessageResponse createMessageResponse(Long chatId, Long messageId, String content) {
     return MessageResponse.builder()
-        .chatId(chatId)
-        .messageId(messageId)
-        .content(content)
-        .build();
+            .chatId(chatId)
+            .messageId(messageId)
+            .content(content)
+            .build();
   }
 
   private ChatPartResponse createChatPart(CustomUserDetails userDetails, Long chatId) {
     return ChatPartResponse.builder()
-        .chatPartId(1L)
-        .userId(userDetails.getUserId())
-        .chatId(chatId)
-        .userName("사용자" + userDetails.getUserId())
-        .role("USER")
-        .build();
+            .chatPartId(1L)
+            .userId(userDetails.getUserId())
+            .chatId(chatId)
+            .userName("사용자" + userDetails.getUserId())
+            .role("USER")
+            .build();
   }
 
   private MockMultipartFile createMessagePart(String content) {
@@ -836,8 +836,8 @@ class ChatControllerImplTest extends ControllerTestSupport {
       Long parentId = 1L;
 
       MessageResponse messageResponse = MessageResponse.builder()
-          .chatId(chatId)
-          .build();
+              .chatId(chatId)
+              .build();
 
       MockMultipartFile file1 = createFilePart("a.txt", "hello");
       MockMultipartFile file2 = createFilePart("b.txt", "world");

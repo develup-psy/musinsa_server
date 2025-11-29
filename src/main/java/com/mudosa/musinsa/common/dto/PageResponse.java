@@ -34,14 +34,14 @@ public class PageResponse<T> {
 
   public static <T> PageResponse<T> from(Page<T> page) {
     return PageResponse.<T>builder()
-        .totalElements(page.getTotalElements())
-        .totalPages(page.getTotalPages())
-        .currentPage(page.getNumber())
-        .pageSize(page.getSize())
-        .content(page.getContent())
-        .hasNext(page.hasNext())
-        .hasPrevious(page.hasPrevious())
-        .build();
+            .totalElements(page.getTotalElements())
+            .totalPages(page.getTotalPages())
+            .currentPage(page.getNumber())
+            .pageSize(page.getSize())
+            .content(page.getContent())
+            .hasNext(page.hasNext())
+            .hasPrevious(page.hasPrevious())
+            .build();
   }
 
 }

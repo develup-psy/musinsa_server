@@ -25,7 +25,14 @@ class CouponTest {
         Integer totalQuantity = 100;
 
         // when
-        Coupon coupon = Coupon.create(couponName, discountType, discountValue, startDate, endDate, totalQuantity);
+        Coupon coupon = Coupon.builder()
+                .couponName(couponName)
+                .discountType(discountType)
+                .discountValue(discountValue)
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(totalQuantity)
+                .build();
 
         // then
         assertThat(coupon).isNotNull();
@@ -45,14 +52,14 @@ class CouponTest {
         // given
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
-        Coupon coupon = Coupon.create(
-                "테스트 쿠폰",
-                DiscountType.AMOUNT,
-                new BigDecimal("5000"),
-                startDate,
-                endDate,
-                100
-        );
+        Coupon coupon = Coupon.builder()
+                .couponName("테스트 쿠폰")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(new BigDecimal("5000"))
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(100)
+                .build();
         BigDecimal orderAmount = new BigDecimal("50000");
 
         // when & then
@@ -66,14 +73,14 @@ class CouponTest {
         // given
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
-        Coupon coupon = Coupon.create(
-                "테스트 쿠폰",
-                DiscountType.AMOUNT,
-                new BigDecimal("5000"),
-                startDate,
-                endDate,
-                100
-        );
+        Coupon coupon = Coupon.builder()
+                .couponName("테스트 쿠폰")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(new BigDecimal("5000"))
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(100)
+                .build();
         // 리플렉션을 사용하지 않고 비활성화 상태를 시뮬레이션할 수 없으므로 생략
     }
 
@@ -84,14 +91,14 @@ class CouponTest {
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
         BigDecimal discountValue = new BigDecimal("5000");
-        Coupon coupon = Coupon.create(
-                "정액 할인 쿠폰",
-                DiscountType.AMOUNT,
-                discountValue,
-                startDate,
-                endDate,
-                100
-        );
+        Coupon coupon = Coupon.builder()
+                .couponName("정액 할인 쿠폰")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(discountValue)
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(100)
+                .build();
         BigDecimal orderAmount = new BigDecimal("50000");
 
         // when
@@ -108,14 +115,14 @@ class CouponTest {
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
         BigDecimal discountValue = new BigDecimal("10"); // 10%
-        Coupon coupon = Coupon.create(
-                "정률 할인 쿠폰",
-                DiscountType.PERCENTAGE,
-                discountValue,
-                startDate,
-                endDate,
-                100
-        );
+        Coupon coupon = Coupon.builder()
+                .couponName("정률 할인 쿠폰")
+                .discountType(DiscountType.PERCENTAGE)
+                .discountValue(discountValue)
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(100)
+                .build();
         BigDecimal orderAmount = new BigDecimal("50000");
 
         // when
@@ -133,14 +140,14 @@ class CouponTest {
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
         BigDecimal discountValue = new BigDecimal("20000"); // 정액 20000원
-        Coupon coupon = Coupon.create(
-                "큰 할인 쿠폰",
-                DiscountType.AMOUNT,
-                discountValue,
-                startDate,
-                endDate,
-                100
-        );
+        Coupon coupon = Coupon.builder()
+                .couponName("큰 할인 쿠폰")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(discountValue)
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(100)
+                .build();
         BigDecimal orderAmount = new BigDecimal("10000");
 
         // when
@@ -157,14 +164,14 @@ class CouponTest {
         // given
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
-        Coupon coupon = Coupon.create(
-                "테스트 쿠폰",
-                DiscountType.AMOUNT,
-                new BigDecimal("5000"),
-                startDate,
-                endDate,
-                100
-        );
+        Coupon coupon = Coupon.builder()
+                .couponName("테스트 쿠폰")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(new BigDecimal("5000"))
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(100)
+                .build();
         LocalDateTime now = LocalDateTime.now();
 
         // when & then
@@ -178,14 +185,14 @@ class CouponTest {
         // given
         LocalDateTime startDate = LocalDateTime.now().plusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
-        Coupon coupon = Coupon.create(
-                "테스트 쿠폰",
-                DiscountType.AMOUNT,
-                new BigDecimal("5000"),
-                startDate,
-                endDate,
-                100
-        );
+        Coupon coupon = Coupon.builder()
+                .couponName("테스트 쿠폰")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(new BigDecimal("5000"))
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(100)
+                .build();
         LocalDateTime now = LocalDateTime.now();
 
         // when & then
@@ -200,14 +207,14 @@ class CouponTest {
         // given
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
-        Coupon coupon = Coupon.create(
-                "테스트 쿠폰",
-                DiscountType.AMOUNT,
-                new BigDecimal("5000"),
-                startDate,
-                endDate,
-                10
-        );
+        Coupon coupon = Coupon.builder()
+                .couponName("테스트 쿠폰")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(new BigDecimal("5000"))
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(10)
+                .build();
         // 재고를 소진시킴
         for (int i = 0; i < 10; i++) {
             coupon.increaseIssuedQuantity();
@@ -226,14 +233,14 @@ class CouponTest {
         // given
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
-        Coupon coupon = Coupon.create(
-                "테스트 쿠폰",
-                DiscountType.AMOUNT,
-                new BigDecimal("5000"),
-                startDate,
-                endDate,
-                100
-        );
+        Coupon coupon = Coupon.builder()
+                .couponName("테스트 쿠폰")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(new BigDecimal("5000"))
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(100)
+                .build();
         Integer initialQuantity = coupon.getIssuedQuantity();
 
         // when
@@ -249,14 +256,14 @@ class CouponTest {
         // given
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
-        Coupon coupon = Coupon.create(
-                "테스트 쿠폰",
-                DiscountType.AMOUNT,
-                new BigDecimal("5000"),
-                startDate,
-                endDate,
-                100
-        );
+        Coupon coupon = Coupon.builder()
+                .couponName("테스트 쿠폰")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(new BigDecimal("5000"))
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(100)
+                .build();
         coupon.increaseIssuedQuantity();
         coupon.increaseIssuedQuantity();
 
@@ -273,15 +280,14 @@ class CouponTest {
         // given
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
-        Coupon coupon = Coupon.create(
-                "테스트 쿠폰",
-                DiscountType.AMOUNT,
-                new BigDecimal("5000"),
-                startDate,
-                endDate,
-                null // 무제한
-        );
-
+        Coupon coupon = Coupon.builder()
+                .couponName("테스트 쿠폰")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(new BigDecimal("5000"))
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(null)
+                .build();
         // when
         Integer remainingQuantity = coupon.getRemainingQuantity();
 

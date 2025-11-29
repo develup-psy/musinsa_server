@@ -92,7 +92,7 @@ public enum ErrorCode {
 
   //product
   PRODUCT_OPTION_NOT_VALID("80001", "상품 옵션이 유효하지 않습니다", HttpStatus.BAD_REQUEST),
-  DUPLICATE_PRODUCT_OPTION("80002", "상품 옵션은 중복될 수 없습니다.", HttpStatus.BAD_REQUEST),
+  DUPLICATE_PRODUCT_OPTION_COMBINATION("80002", "상품 옵션조합은 중복될 수 없습니다.", HttpStatus.BAD_REQUEST),
   DUPLICATE_PRODUCT_IMAGE("80003", "중복된 상품 이미지가 존재합니다", HttpStatus.BAD_REQUEST),
   PRODUCT_INFO_REQUIRED("80004", "상품 정보들은 비워둘 수 없습니다.", HttpStatus.BAD_REQUEST),
   PRODUCT_OPTION_REQUIRED("80005", "상품 옵션은 필수입니다.", HttpStatus.BAD_REQUEST),
@@ -106,6 +106,9 @@ public enum ErrorCode {
   PRODUCT_REQUIRED("80013", "상품은 필수입니다.", HttpStatus.BAD_REQUEST),
   PRODUCT_OPTION_NOT_AVAILABLE("80014", "상품 옵션이 판매 가능한 상태가 아닙니다.", HttpStatus.BAD_REQUEST),
   PRODUCT_OPTION_NOT_EXIST("80015", "요청한 상품 옵션이 존재하지 않습니다.", HttpStatus.BAD_REQUEST),
+  PRODUCT_CATEGORY_REQUIRED("80016", "상품 카테고리는 필수입니다.", HttpStatus.BAD_REQUEST),
+  PRODUCT_NOTHING_TO_UPDATE("80017", "변경할 항목이 없습니다.", HttpStatus.BAD_REQUEST),
+  PRODUCT_NO_CHANGES_DETECTED("80018", "상품 정보에 변경된 내용이 없습니다.", HttpStatus.BAD_REQUEST),
 
   //chat
   MESSAGE_OR_FILE_REQUIRED("110001", "메시지 또는 파일 중 하나는 반드시 포함되어야 합니다.", HttpStatus.BAD_REQUEST),
@@ -138,6 +141,11 @@ public enum ErrorCode {
   CART_ITEM_PRODUCT_OPTION_REQUIRED("B0002", "상품 옵션은 필수입니다.", HttpStatus.BAD_REQUEST),
   CART_ITEM_QUANTITY_INVALID("B0003", "수량은 1개 이상이어야 합니다.", HttpStatus.BAD_REQUEST),
   CART_ITEM_QUANTITY_REQUIRED("B0004", "수량은 필수입니다.", HttpStatus.BAD_REQUEST),
+  CART_ITEM_NOT_FOUND("B0005", "장바구니 항목을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+  INVALID_CART_ITEM_UPDATE_VALUE("B0006", "장바구니 항목 업데이트 값이 유효하지 않습니다.", HttpStatus.BAD_REQUEST),
+  CART_ITEM_ONLY_ACCESS_PERSONAL("B0007", "본인 장바구니 항목만 접근할 수 있습니다.", HttpStatus.FORBIDDEN),
+  CART_ITEM_STOCK_QUANTITY_REQUIRED("B0008", "장바구니 항목의 재고 수량은 필수입니다.", HttpStatus.BAD_REQUEST),
+  CART_ITEM_INSUFFICIENT_STOCK("B0009", "장바구니 항목의 재고가 부족합니다.", HttpStatus.BAD_REQUEST),
 
   //category
   CATEGORY_NAME_REQUIRED("C0001", "카테고리 이름은 필수입니다.", HttpStatus.BAD_REQUEST),
@@ -168,8 +176,7 @@ public enum ErrorCode {
   STOCK_QUANTITY_CANNOT_BE_NEGATIVE("F0003", "재고 수량은 음수가 될 수 없습니다.", HttpStatus.BAD_REQUEST),
   STOCK_QUANTITY_CANNOT_BE_NULL("F0004", "재고 수량은 null일 수 없습니다.", HttpStatus.BAD_REQUEST),
   STOCK_QUANTITY_OUT_OF_STOCK("F0005", "재고 수량이 부족합니다.", HttpStatus.BAD_REQUEST),
-  STOCK_QUANTITY_CANNOT_BE_LESS_THAN_ONE("F0006", "재고 감소 수량은 1 이상이어야 합니다.", HttpStatus.BAD_REQUEST)
-  ;
+  STOCK_QUANTITY_CANNOT_BE_LESS_THAN_ONE("F0006", "재고 감소 수량은 1 이상이어야 합니다.", HttpStatus.BAD_REQUEST);
   
   
 

@@ -1,178 +1,395 @@
 package com.mudosa.musinsa.product.application;
 
-import com.mudosa.musinsa.common.vo.Money;
+import com.mudosa.musinsa.ServiceConfig;
+import com.mudosa.musinsa.brand.domain.model.Brand;
+import com.mudosa.musinsa.brand.domain.model.BrandMember;
+import com.mudosa.musinsa.brand.domain.repository.BrandRepository;
+import com.mudosa.musinsa.product.application.dto.CategoryTreeResponse;
+import com.mudosa.musinsa.product.application.dto.ProductCreateRequest;
 import com.mudosa.musinsa.product.application.dto.ProductSearchCondition;
 import com.mudosa.musinsa.product.application.dto.ProductSearchResponse;
-import com.mudosa.musinsa.product.application.dto.ProductDetailResponse;
-import com.mudosa.musinsa.product.domain.model.*;
-import com.mudosa.musinsa.product.domain.vo.StockQuantity;
-import com.mudosa.musinsa.product.domain.repository.ProductRepository;
-import jakarta.persistence.EntityNotFoundException;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
+import com.mudosa.musinsa.product.domain.model.Category;
+import com.mudosa.musinsa.product.domain.model.ProductGenderType;
+import com.mudosa.musinsa.product.domain.repository.CategoryRepository;
+import com.mudosa.musinsa.product.domain.repository.OptionValueRepository;
+import com.mudosa.musinsa.product.domain.model.OptionValue;
 
-import java.lang.reflect.Field;
+import jakarta.transaction.Transactional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.STRICT_STUBS)
-@DisplayName("ProductQueryService 단위 테스트")
-class ProductQueryServiceTest {
+@DisplayName("ProductQueryService 테스트")
+@Transactional
+public class ProductQueryServiceTest extends ServiceConfig {
 
-    @Mock
-    private ProductRepository productRepository;
+	@Autowired
+	private ProductQueryService sut;
+	@Autowired
+	private ProductCommandService productCommandService;
+	@Autowired
+	private BrandRepository brandRepository;
+	@Autowired
+	private CategoryRepository categoryRepository;
+	@Autowired
+	private OptionValueRepository optionValueRepository;
 
-    @InjectMocks
-    private ProductQueryService sut;
+	private Long userId;
+	private Long brandId;
+	private List<Long> optionValueIds;
+	private String topsCategoryPath;
+	private String bottomsCategoryPath;
 
-    private void setId(Object target, String fieldName, Long id) {
-        try {
-            Field f = target.getClass().getDeclaredField(fieldName);
-            f.setAccessible(true);
-            f.set(target, id);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+	@BeforeEach
+	void setUp() {
+		userId = 1L;
+		brandId = saveBrandWithMember(userId).getBrandId();
+		topsCategoryPath = saveCategoryPath("상의", "티셔츠").buildPath();
+		bottomsCategoryPath = saveCategoryPath("하의", "바지").buildPath();
+		optionValueIds = List.of(
+			saveOptionValue("사이즈", "L").getOptionValueId(),
+			saveOptionValue("색상", "블랙").getOptionValueId()
+		);
+	}
+
+	@Test
+	@DisplayName("조건 없이 조회하면 전체 목록이 반환된다.")
+	void searchProductsWithoutCondition() {
+		// given
+		productCommandService.createProduct(
+			createProductRequest("블랙 티셔츠", topsCategoryPath), brandId, userId);
+		productCommandService.createProduct(
+			createProductRequest("화이트 바지", bottomsCategoryPath), brandId, userId);
+
+		// when
+		ProductSearchResponse response = sut.searchProducts(null);
+
+		// then
+		assertThat(response.getTotalElements()).isEqualTo(2);
+		assertThat(response.getProducts())
+			.extracting(ProductSearchResponse.ProductSummary::getProductName)
+			.containsExactlyInAnyOrder("블랙 티셔츠", "화이트 바지");
+	}
+
+	@Test
+	@DisplayName("키워드 없으면 필터만으로 검색된다.")
+	void searchProductsWithFiltersOnly() {
+		// given
+		productCommandService.createProduct(
+			createProductRequest("블랙 티셔츠", topsCategoryPath), brandId, userId);
+		productCommandService.createProduct(
+			createProductRequest("화이트 바지", bottomsCategoryPath), brandId, userId);
+
+		ProductSearchCondition condition = ProductSearchCondition.builder()
+			.categoryPaths(List.of(bottomsCategoryPath))
+			.gender(ProductGenderType.ALL)
+			.brandId(brandId)
+			.pageable(PageRequest.of(0, 10))
+			.build();
+
+		// when
+		ProductSearchResponse response = sut.searchProducts(condition);
+
+		// then
+		assertThat(response.getTotalElements()).isEqualTo(1);
+		assertThat(response.getProducts())
+			.extracting(ProductSearchResponse.ProductSummary::getProductName)
+			.containsExactly("화이트 바지");
+	}
+
+	@Test
+	@DisplayName("성별 필터를 적용하면 해당 성별만 조회된다.")
+	void searchProductsByGender() {
+		// given
+		productCommandService.createProduct(
+			createProductRequest("남성 티셔츠", topsCategoryPath, ProductGenderType.MEN, BigDecimal.valueOf(10000)), brandId, userId);
+		productCommandService.createProduct(
+			createProductRequest("여성 바지", bottomsCategoryPath, ProductGenderType.WOMEN, BigDecimal.valueOf(12000)), brandId, userId);
+
+		ProductSearchCondition condition = ProductSearchCondition.builder()
+			.gender(ProductGenderType.MEN)
+			.pageable(PageRequest.of(0, 10))
+			.build();
+
+		// when
+		ProductSearchResponse response = sut.searchProducts(condition);
+
+		// then
+		assertThat(response.getTotalElements()).isEqualTo(1);
+		assertThat(response.getProducts())
+			.extracting(ProductSearchResponse.ProductSummary::getProductName)
+			.containsExactly("남성 티셔츠");
+	}
+
+	@Test
+	@DisplayName("브랜드 필터를 적용하면 해당 브랜드 상품만 조회된다.")
+	void searchProductsByBrand() {
+		// given
+		Brand otherBrand = saveBrandWithMember(2L);
+		Long otherBrandId = otherBrand.getBrandId();
+
+		productCommandService.createProduct(
+			createProductRequest("우리 브랜드 티셔츠", topsCategoryPath), brandId, userId);
+		productCommandService.createProduct(
+			createProductRequest("다른 브랜드 바지", bottomsCategoryPath), otherBrandId, 2L);
+
+		ProductSearchCondition condition = ProductSearchCondition.builder()
+			.brandId(otherBrandId)
+			.pageable(PageRequest.of(0, 10))
+			.build();
+
+		// when
+		ProductSearchResponse response = sut.searchProducts(condition);
+
+		// then
+		assertThat(response.getTotalElements()).isEqualTo(1);
+		assertThat(response.getProducts())
+			.extracting(ProductSearchResponse.ProductSummary::getProductName)
+			.containsExactly("다른 브랜드 바지");
+	}
+
+    @Test
+	@DisplayName("키워드가 있을 때 필터와 함께 검색된다.")
+	void searchProductsWithKeyword() {
+		// given
+		Long blackTeeId = productCommandService.createProduct(
+			createProductRequest("블랙 티셔츠", topsCategoryPath), brandId, userId);
+		productCommandService.createProduct(
+			createProductRequest("화이트 바지", bottomsCategoryPath), brandId, userId);
+
+		ProductSearchCondition condition = ProductSearchCondition.builder()
+			.keyword("블랙")
+			.categoryPaths(List.of(topsCategoryPath))
+			.gender(ProductGenderType.ALL)
+			.brandId(brandId)
+			.pageable(PageRequest.of(0, 10))
+			.build();
+
+		// when
+		ProductSearchResponse response = sut.searchProducts(condition);
+
+		// then
+		assertThat(response.getTotalElements()).isEqualTo(1);
+		assertThat(response.getProducts())
+			.extracting(ProductSearchResponse.ProductSummary::getProductId)
+			.containsExactly(blackTeeId);
+	}
+
+	@Test
+	@DisplayName("키워드가 공백이면 필터-only 경로를 탄다.")
+	void searchProductsWithBlankKeywordTreatsAsNoKeyword() {
+		// given
+		productCommandService.createProduct(
+			createProductRequest("블랙 티셔츠", topsCategoryPath), brandId, userId);
+		productCommandService.createProduct(
+			createProductRequest("화이트 바지", bottomsCategoryPath), brandId, userId);
+
+		ProductSearchCondition condition = ProductSearchCondition.builder()
+			.keyword("   ")
+			.categoryPaths(List.of(bottomsCategoryPath))
+			.pageable(PageRequest.of(0, 10))
+			.build();
+
+		// when
+		ProductSearchResponse response = sut.searchProducts(condition);
+
+		// then
+		assertThat(response.getTotalElements()).isEqualTo(1);
+		assertThat(response.getProducts())
+			.extracting(ProductSearchResponse.ProductSummary::getProductName)
+			.containsExactly("화이트 바지");
+	}
+
+	@Test
+	@DisplayName("가격 낮은순 정렬이 적용된다.")
+	void searchProductsSortedByLowestPrice() {
+		// given
+		productCommandService.createProduct(
+			createProductRequest("저가 티셔츠", topsCategoryPath, ProductGenderType.ALL, BigDecimal.valueOf(5000)), brandId, userId);
+		productCommandService.createProduct(
+			createProductRequest("고가 티셔츠", topsCategoryPath, ProductGenderType.ALL, BigDecimal.valueOf(15000)), brandId, userId);
+
+		ProductSearchCondition condition = ProductSearchCondition.builder()
+			.priceSort(ProductSearchCondition.PriceSort.LOWEST)
+			.pageable(PageRequest.of(0, 10))
+			.build();
+
+		// when
+		ProductSearchResponse response = sut.searchProducts(condition);
+
+		// then
+		assertThat(response.getProducts())
+			.extracting(ProductSearchResponse.ProductSummary::getProductName)
+			.containsExactly("저가 티셔츠", "고가 티셔츠");
+	}
+
+    @Test
+    @DisplayName("가격 높은순 정렬이 적용된다.")
+    void searchProductsSortedByHighestPrice() {
+        // given
+        productCommandService.createProduct(
+            createProductRequest("저가 티셔츠", topsCategoryPath, ProductGenderType.ALL, BigDecimal.valueOf(5000)), brandId, userId);
+        productCommandService.createProduct(
+            createProductRequest("고가 티셔츠", topsCategoryPath, ProductGenderType.ALL, BigDecimal.valueOf(15000)), brandId, userId);
+
+        ProductSearchCondition condition = ProductSearchCondition.builder()
+            .priceSort(ProductSearchCondition.PriceSort.HIGHEST)
+            .pageable(PageRequest.of(0, 10))
+            .build();
+
+        // when
+        ProductSearchResponse response = sut.searchProducts(condition);
+
+        // then
+        assertThat(response.getProducts())
+            .extracting(ProductSearchResponse.ProductSummary::getProductName)
+            .containsExactly("고가 티셔츠", "저가 티셔츠");
     }
 
-    @Nested
-    @DisplayName("상품 검색")
-    class SearchProducts {
+	@Test
+	@DisplayName("페이징이 적용된다.")
+	void searchProductsWithPagination() {
+		// given
+		productCommandService.createProduct(createProductRequest("상품1", topsCategoryPath), brandId, userId);
+		productCommandService.createProduct(createProductRequest("상품2", topsCategoryPath), brandId, userId);
+		productCommandService.createProduct(createProductRequest("상품3", topsCategoryPath), brandId, userId);
 
-        @Test
-        @DisplayName("조건이 null이고 결과가 비어있으면 빈 응답을 반환한다.")
-        void search_noCondition_returnsEmpty() {
-            // Given: repository가 빈 페이지를 반환하도록 설정
-        when(productRepository.findAllByFiltersWithPagination(anyList(), any(), any(), any(), any(Pageable.class)))
-                    .thenReturn(Page.empty());
+		ProductSearchCondition condition = ProductSearchCondition.builder()
+			.pageable(PageRequest.of(1, 2)) // second page (0-based)
+			.build();
 
-            // When: 조건 없이 검색 호출
-            ProductSearchResponse resp = sut.searchProducts(null);
+		// when
+		ProductSearchResponse response = sut.searchProducts(condition);
 
-            // Then: 빈 결과와 페이징 정보
-            assertThat(resp.getProducts()).isEmpty();
-            assertThat(resp.getTotalElements()).isEqualTo(0);
-            assertThat(resp.getPage()).isEqualTo(0);
-        }
+		// then
+		assertThat(response.getPage()).isEqualTo(1);
+		assertThat(response.getSize()).isEqualTo(2);
+		assertThat(response.getTotalElements()).isEqualTo(3);
+		assertThat(response.getProducts())
+			.extracting(ProductSearchResponse.ProductSummary::getProductName)
+			.containsExactly("상품3");
+	}
 
-        @Test
-        @DisplayName("키워드가 주어지면 키워드 전용 검색 메서드를 호출해 매핑된 요약을 반환한다.")
-        void search_withKeyword_mapsSummary() {
-            // Given: 상품 엔티티를 구성
-            Product product = Product.builder()
-                    .brand(null)
-                    .productName("티셔츠")
-                    .productInfo("편한 티")
-                    .productGenderType(ProductGenderType.ALL)
-                    .brandName("브랜드")
-                    .categoryPath("상의/티셔츠")
-                    .isAvailable(true)
-                    .build();
+	@Test
+	@DisplayName("unpaged 요청도 기본 페이지로 처리된다.")
+	void searchProductsWithUnpagedConditionUsesDefaultPaging() {
+		// given
+		productCommandService.createProduct(createProductRequest("상품1", topsCategoryPath), brandId, userId);
+		productCommandService.createProduct(createProductRequest("상품2", topsCategoryPath), brandId, userId);
 
-            Image img = Image.builder()
-                    .imageUrl("http://example.com/thumb.jpg")
-                    .isThumbnail(true)
-                    .build();
-            product.addImage(img);
+		ProductSearchCondition condition = ProductSearchCondition.builder()
+			.pageable(org.springframework.data.domain.Pageable.unpaged())
+			.build();
 
-            Inventory inv = Inventory.builder().stockQuantity(new StockQuantity(5)).build();
-            ProductOption option = ProductOption.create(product, new Money(10000), inv);
-            product.addProductOption(option);
+		// when
+		ProductSearchResponse response = sut.searchProducts(condition);
 
-            // id 세팅(매퍼에서 사용)
-            setId(product, "productId", 100L);
-            setId(option, "productOptionId", 200L);
-            setId(img, "imageId", 300L);
+		// then
+		assertThat(response.getPage()).isEqualTo(0);
+		assertThat(response.getSize()).isEqualTo(24); // ensurePaged 기본값
+		assertThat(response.getTotalElements()).isEqualTo(2);
+	}
 
-            Page<Product> page = new PageImpl<>(List.of(product));
-        when(productRepository.searchByKeywordWithFilters(anyString(), anyList(), any(), any(), any(), any(Pageable.class)))
-                    .thenReturn(page);
+    @Test
+    @DisplayName("단일 상품 상세 조회가 정상 동작한다.")
+    void getProductDetail() {
+        // given
+        Long productId = productCommandService.createProduct(
+            createProductRequest("상세 조회용 티셔츠", topsCategoryPath), brandId, userId); 
+        
+        // when
+        var response = sut.getProductDetail(productId);
+        
+        // then
+        assertThat(response.getProductId()).isEqualTo(productId);
+        assertThat(response.getProductName()).isEqualTo("상세 조회용 티셔츠");
+    } 
+    
+    @Test
+    @DisplayName("존재하지 않는 상품 상세 조회 시 예외가 발생한다.")
+    void getProductDetail_NonExistentProduct_ThrowsException() {
+        // given
+        Long nonExistentProductId = 9999L;
 
-            ProductSearchCondition condition = ProductSearchCondition.builder()
-                    .keyword("티셔츠")
-                    .pageable(Pageable.unpaged())
-                    .build();
-
-            // When: 검색 실행
-            ProductSearchResponse resp = sut.searchProducts(condition);
-
-            // Then: 매핑된 요약 정보 확인
-            assertThat(resp.getProducts()).hasSize(1);
-            ProductSearchResponse.ProductSummary s = resp.getProducts().get(0);
-            assertThat(s.getProductId()).isEqualTo(100L);
-            assertThat(s.getThumbnailUrl()).isEqualTo("http://example.com/thumb.jpg");
-            assertThat(s.getHasStock()).isTrue();
-            assertThat(s.getLowestPrice()).isEqualTo(new BigDecimal("10000.00"));
-        }
+        // when // then
+        org.junit.jupiter.api.Assertions.assertThrows(
+            com.mudosa.musinsa.exception.BusinessException.class,
+            () -> sut.getProductDetail(nonExistentProductId)
+        );
     }
 
-    @Nested
-    @DisplayName("상품 상세 조회")
-    class GetProductDetail {
+    @Test
+    @DisplayName("카테고리 트리를 부모-자식 구조로 반환한다.")
+    void getCategoryTree_ReturnsTreeStructure() {
+        // given: setUp에서 상의>티셔츠, 하의>바지 저장
 
-        @Test
-        @DisplayName("존재하는 상품 id를 조회하면 상세 응답을 반환한다.")
-        void getProductDetail_success() {
-            // Given: 상품 엔티티 구성
-            Product product = Product.builder()
-                    .brand(null)
-                    .productName("바지")
-                    .productInfo("편한 바지")
-                    .productGenderType(ProductGenderType.ALL)
-                    .brandName("브랜드")
-                    .categoryPath("하의/바지")
-                    .isAvailable(true)
-                    .build();
+        // when
+        CategoryTreeResponse response = sut.getCategoryTree();
 
-            Image img = Image.builder()
-                    .imageUrl("http://example.com/image.jpg")
-                    .isThumbnail(false)
-                    .build();
-            product.addImage(img);
-            Inventory inv = Inventory.builder().stockQuantity(new StockQuantity(2)).build();
-            ProductOption option = ProductOption.create(product, new Money(30000), inv);
-            product.addProductOption(option);
+        // then
+        assertThat(response.getCategories()).hasSize(2);
 
-            setId(product, "productId", 11L);
-            setId(img, "imageId", 12L);
-            setId(option, "productOptionId", 13L);
+        CategoryTreeResponse.CategoryNode tops = findByName(response, "상의");
+        CategoryTreeResponse.CategoryNode bottoms = findByName(response, "하의");
 
-            when(productRepository.findDetailById(11L)).thenReturn(Optional.of(product));
-
-            // When: 상세 조회 실행
-            ProductDetailResponse resp = sut.getProductDetail(11L);
-
-            // Then: 상세 응답의 필수 필드를 검증
-            assertThat(resp.getProductId()).isEqualTo(11L);
-            assertThat(resp.getImages()).hasSize(1);
-            assertThat(resp.getOptions()).hasSize(1);
-        }
-
-        @Test
-        @DisplayName("존재하지 않는 상품 id를 조회하면 EntityNotFoundException이 발생한다.")
-        void getProductDetail_notFound_throws() {
-            // Given: repository가 비어있는 Optional을 반환하도록 설정
-            when(productRepository.findDetailById(999L)).thenReturn(Optional.empty());
-
-            // When / Then: 존재하지 않는 id로 호출하면 EntityNotFoundException 발생
-            assertThatThrownBy(() -> sut.getProductDetail(999L)).isInstanceOf(EntityNotFoundException.class);
-        }
+        assertThat(tops.getChildren())
+            .extracting(CategoryTreeResponse.CategoryNode::getCategoryName)
+            .containsExactly("티셔츠");
+        assertThat(bottoms.getChildren())
+            .extracting(CategoryTreeResponse.CategoryNode::getCategoryName)
+            .containsExactly("바지");
     }
+
+    // ==== helper methods ==== //
+	private CategoryTreeResponse.CategoryNode findByName(CategoryTreeResponse response, String name) {
+		return response.getCategories().stream()
+			.filter(node -> node.getCategoryName().equals(name))
+			.findFirst()
+			.orElseThrow();
+	}
+
+	private ProductCreateRequest createProductRequest(String name, String categoryPath) {
+		return createProductRequest(name, categoryPath, ProductGenderType.ALL, BigDecimal.valueOf(10000));
+	}
+
+	private ProductCreateRequest createProductRequest(String name, String categoryPath, ProductGenderType genderType, BigDecimal price) {
+		return ProductCreateRequest.builder()
+			.productName(name)
+			.productInfo("상품 정보")
+			.productGenderType(genderType)
+			.categoryPath(categoryPath)
+			.isAvailable(true)
+			.images(List.of(ProductCreateRequest.ImageCreateRequest.builder()
+				.imageUrl("http://example.com/thumb.jpg")
+				.isThumbnail(true)
+				.build()))
+			.options(List.of(ProductCreateRequest.OptionCreateRequest.builder()
+				.productPrice(price)
+				.stockQuantity(5)
+				.optionValueIds(optionValueIds)
+				.build()))
+			.build();
+	}
+
+	private Brand saveBrandWithMember(Long userId) {
+		Brand brand = Brand.create("브랜드", "BRAND", BigDecimal.ZERO);
+		brand.addMember(BrandMember.create(userId));
+		return brandRepository.save(brand);
+	}
+
+	private Category saveCategoryPath(String parentName, String childName) {
+		Category parent = categoryRepository.save(Category.create(parentName, null, null));
+		return categoryRepository.save(Category.create(childName, parent, null));
+	}
+
+	private OptionValue saveOptionValue(String optionName, String optionValue) {
+		return optionValueRepository.save(OptionValue.create(optionName, optionValue));
+	}
 }

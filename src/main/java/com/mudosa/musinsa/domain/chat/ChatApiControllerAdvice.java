@@ -22,10 +22,10 @@ public class ChatApiControllerAdvice {
     );
 
     ApiResponse body = ApiResponse.builder()
-        .success(false)
-        .errorCode("400")
-        .message(message)
-        .build();
+            .success(false)
+            .errorCode("400")
+            .message(message)
+            .build();
 
     return ResponseEntity.badRequest().body(body);
   }

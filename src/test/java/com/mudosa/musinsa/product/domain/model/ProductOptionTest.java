@@ -314,5 +314,30 @@ class ProductOptionTest {
         assertThat(hasStock).isFalse();
     }
 
+	@Test
+	@DisplayName("동일한 조합일떄 equals/hashCode가 동일하다.")
+	void equalsAndHashCodeSameValues() {
+		// given
+		ProductOptionValue.ProductOptionValueId id1 = new ProductOptionValue.ProductOptionValueId(1L, 2L);
+		ProductOptionValue.ProductOptionValueId id2 = new ProductOptionValue.ProductOptionValueId(1L, 2L);
+
+		// when // then
+		assertThat(id1).isEqualTo(id2);
+		assertThat(id1).hasSameHashCodeAs(id2);
+	}
+
+	@Test
+	@DisplayName("옵션 아이디나 옵션 값 아이디가 다르면 equals가 false다.")
+	void equalsReturnsFalseForDifferentValues() {
+		// given
+		ProductOptionValue.ProductOptionValueId id = new ProductOptionValue.ProductOptionValueId(1L, 2L);
+		ProductOptionValue.ProductOptionValueId differentProduct = new ProductOptionValue.ProductOptionValueId(99L, 2L);
+		ProductOptionValue.ProductOptionValueId differentOption = new ProductOptionValue.ProductOptionValueId(1L, 99L);
+
+		// when // then
+		assertThat(id).isNotEqualTo(differentProduct);
+		assertThat(id).isNotEqualTo(differentOption);
+	}
+
     
 }  

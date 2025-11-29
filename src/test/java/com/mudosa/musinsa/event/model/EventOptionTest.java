@@ -18,21 +18,26 @@ class EventOptionTest {
         // given
         LocalDateTime startedAt = LocalDateTime.of(2025, 11, 20, 0, 0);
         LocalDateTime endedAt = LocalDateTime.of(2025, 12, 20, 23, 59);
-        Event event = Event.create(
-                "테스트 이벤트",
-                "설명",
-                Event.EventType.DROP,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                null
-        );
+        Event event = Event.builder()
+                .title("테스트 이벤트")
+                .description("설명")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(null)
+                .build();
         BigDecimal eventPrice = new BigDecimal("50000");
         Integer eventStock = 100;
 
         // when
-        EventOption eventOption = EventOption.create(event, null, eventPrice, eventStock);
+        EventOption eventOption = EventOption.builder()
+                .event(event)
+                .productOption(null)
+                .eventPrice(eventPrice)
+                .eventStock(eventStock)
+                .build();
 
         // then
         assertThat(eventOption).isNotNull();
@@ -47,19 +52,24 @@ class EventOptionTest {
         // given
         LocalDateTime startedAt = LocalDateTime.of(2025, 11, 20, 0, 0);
         LocalDateTime endedAt = LocalDateTime.of(2025, 12, 20, 23, 59);
-        Event event = Event.create(
-                "테스트 이벤트",
-                "설명",
-                Event.EventType.DROP,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                null
-        );
+        Event event = Event.builder()
+                .title("테스트 이벤트")
+                .description("설명")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(null)
+                .build();
 
         // when
-        EventOption eventOption = EventOption.create(event, null, null, null);
+        EventOption eventOption = EventOption.builder()
+                .event(event)
+                .productOption(null)
+                .eventPrice(null)
+                .eventStock(null)
+                .build();
 
         // then
         assertThat(eventOption.getEventStock()).isEqualTo(0);
@@ -71,17 +81,22 @@ class EventOptionTest {
         // given
         LocalDateTime startedAt = LocalDateTime.of(2025, 11, 20, 0, 0);
         LocalDateTime endedAt = LocalDateTime.of(2025, 12, 20, 23, 59);
-        Event event = Event.create(
-                "테스트 이벤트",
-                "설명",
-                Event.EventType.DROP,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                null
-        );
-        EventOption eventOption = EventOption.create(event, null, new BigDecimal("50000"), 100);
+        Event event = Event.builder()
+                .title("테스트 이벤트")
+                .description("설명")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(null)
+                .build();
+        EventOption eventOption = EventOption.builder()
+                .event(event)
+                .productOption(null)
+                .eventPrice(new BigDecimal("50000"))
+                .eventStock(100)
+                .build();
 
         // when
         eventOption.increaseStock(50);
@@ -96,17 +111,22 @@ class EventOptionTest {
         // given
         LocalDateTime startedAt = LocalDateTime.of(2025, 11, 20, 0, 0);
         LocalDateTime endedAt = LocalDateTime.of(2025, 12, 20, 23, 59);
-        Event event = Event.create(
-                "테스트 이벤트",
-                "설명",
-                Event.EventType.DROP,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                null
-        );
-        EventOption eventOption = EventOption.create(event, null, new BigDecimal("50000"), 100);
+        Event event = Event.builder()
+                .title("테스트 이벤트")
+                .description("설명")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(null)
+                .build();
+        EventOption eventOption = EventOption.builder()
+                .event(event)
+                .productOption(null)
+                .eventPrice(new BigDecimal("50000"))
+                .eventStock(100)
+                .build();
 
         // when
         eventOption.decreaseStock(30);
@@ -121,17 +141,22 @@ class EventOptionTest {
         // given
         LocalDateTime startedAt = LocalDateTime.of(2025, 11, 20, 0, 0);
         LocalDateTime endedAt = LocalDateTime.of(2025, 12, 20, 23, 59);
-        Event event = Event.create(
-                "테스트 이벤트",
-                "설명",
-                Event.EventType.DROP,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                null
-        );
-        EventOption eventOption = EventOption.create(event, null, new BigDecimal("50000"), 10);
+        Event event = Event.builder()
+                .title("테스트 이벤트")
+                .description("설명")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(null)
+                .build();
+        EventOption eventOption = EventOption.builder()
+                .event(event)
+                .productOption(null)
+                .eventPrice(new BigDecimal("50000"))
+                .eventStock(10)
+                .build();
 
         // when & then
         assertThatThrownBy(() -> eventOption.decreaseStock(20))
@@ -145,17 +170,22 @@ class EventOptionTest {
         // given
         LocalDateTime startedAt = LocalDateTime.of(2025, 11, 20, 0, 0);
         LocalDateTime endedAt = LocalDateTime.of(2025, 12, 20, 23, 59);
-        Event event = Event.create(
-                "테스트 이벤트",
-                "설명",
-                Event.EventType.DROP,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                null
-        );
-        EventOption eventOption = EventOption.create(event, null, new BigDecimal("50000"), 5);
+        Event event = Event.builder()
+                .title("테스트 이벤트")
+                .description("설명")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(null)
+                .build();
+        EventOption eventOption = EventOption.builder()
+                .event(event)
+                .productOption(null)
+                .eventPrice(new BigDecimal("50000"))
+                .eventStock(5)
+                .build();
 
         // when & then
         assertThatThrownBy(() -> eventOption.decreaseStock(6))
@@ -169,27 +199,32 @@ class EventOptionTest {
         // given
         LocalDateTime startedAt = LocalDateTime.of(2025, 11, 20, 0, 0);
         LocalDateTime endedAt = LocalDateTime.of(2025, 12, 20, 23, 59);
-        Event event1 = Event.create(
-                "테스트 이벤트1",
-                "설명1",
-                Event.EventType.DROP,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                null
-        );
-        Event event2 = Event.create(
-                "테스트 이벤트2",
-                "설명2",
-                Event.EventType.DROP,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                null
-        );
-        EventOption eventOption = EventOption.create(event1, null, new BigDecimal("50000"), 100);
+        Event event1 = Event.builder()
+                .title("테스트 이벤트1")
+                .description("설명1")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(null)
+                .build();
+        Event event2 = Event.builder()
+                .title("테스트 이벤트2")
+                .description("설명2")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(null)
+                .build();
+        EventOption eventOption = EventOption.builder()
+                .event(event1)
+                .productOption(null)
+                .eventPrice(new BigDecimal("50000"))
+                .eventStock(100)
+                .build();
 
         // when
         eventOption.assignEvent(event2);

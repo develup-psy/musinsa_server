@@ -385,13 +385,13 @@ public class ChatServiceImpl implements ChatService {
                     : "SYSTEM";
 
                 parentDto = ParentMessageResponse.builder()
-                    .messageId(parent.getMessageId())
-                    .userId(parentUserId)
-                    .userName(parentUserName)
-                    .content(parent.getContent())
-                    .createdAt(parent.getCreatedAt())
-                    .attachments(parentAttachments)
-                    .build();
+                        .messageId(parent.getMessageId())
+                        .userId(parentUserId)
+                        .userName(parentUserName)
+                        .content(parent.getContent())
+                        .createdAt(parent.getCreatedAt())
+                        .attachments(parentAttachments)
+                        .build();
               }
 
               // sender
@@ -406,17 +406,17 @@ public class ChatServiceImpl implements ChatService {
               boolean isManager = senderUserId != null && managerUserIds.contains(senderUserId);
 
               return MessageResponse.builder()
-                  .messageId(msg.getMessageId())
-                  .chatId(msg.getChatId())
-                  .chatPartId(cp != null ? cp.getChatPartId() : null)
-                  .userId(senderUserId)
-                  .userName(senderName)
-                  .content(msg.getContent())
-                  .attachments(currentAttachments)
-                  .createdAt(msg.getCreatedAt())
-                  .parent(parentDto)
-                  .isManager(isManager)
-                  .build();
+                      .messageId(msg.getMessageId())
+                      .chatId(msg.getChatId())
+                      .chatPartId(cp != null ? cp.getChatPartId() : null)
+                      .userId(senderUserId)
+                      .userName(senderName)
+                      .content(msg.getContent())
+                      .attachments(currentAttachments)
+                      .createdAt(msg.getCreatedAt())
+                      .parent(parentDto)
+                      .isManager(isManager)
+                      .build();
             })
             .toList();
 

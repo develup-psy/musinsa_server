@@ -20,14 +20,14 @@ class MemberCouponTest {
         Long userId = 1L;
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
-        Coupon coupon = Coupon.create(
-                "테스트 쿠폰",
-                DiscountType.AMOUNT,
-                new BigDecimal("5000"),
-                startDate,
-                endDate,
-                100
-        );
+        Coupon coupon = Coupon.builder()
+                .couponName("테스트 쿠폰")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(new BigDecimal("5000"))
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(100)
+                .build();
 
         // when
         MemberCoupon memberCoupon = MemberCoupon.issue(userId, coupon);
@@ -46,14 +46,14 @@ class MemberCouponTest {
         Long userId = 1L;
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
-        Coupon coupon = Coupon.create(
-                "테스트 쿠폰",
-                DiscountType.AMOUNT,
-                new BigDecimal("5000"),
-                startDate,
-                endDate,
-                100
-        );
+        Coupon coupon = Coupon.builder()
+                .couponName("테스트 쿠폰")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(new BigDecimal("5000"))
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(100)
+                .build();
         MemberCoupon memberCoupon = MemberCoupon.issue(userId, coupon);
 
         // when
@@ -70,14 +70,14 @@ class MemberCouponTest {
         Long userId = 1L;
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
-        Coupon coupon = Coupon.create(
-                "테스트 쿠폰",
-                DiscountType.AMOUNT,
-                new BigDecimal("5000"),
-                startDate,
-                endDate,
-                100
-        );
+        Coupon coupon = Coupon.builder()
+                .couponName("테스트 쿠폰")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(new BigDecimal("5000"))
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(100)
+                .build();
         MemberCoupon memberCoupon = MemberCoupon.issue(userId, coupon);
 
         // when & then
@@ -93,14 +93,14 @@ class MemberCouponTest {
         Long orderId = 100L;
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
-        Coupon coupon = Coupon.create(
-                "테스트 쿠폰",
-                DiscountType.AMOUNT,
-                new BigDecimal("5000"),
-                startDate,
-                endDate,
-                100
-        );
+        Coupon coupon = Coupon.builder()
+                .couponName("테스트 쿠폰")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(new BigDecimal("5000"))
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(100)
+                .build();
         MemberCoupon memberCoupon = MemberCoupon.issue(userId, coupon);
 
         // when
@@ -119,14 +119,14 @@ class MemberCouponTest {
         Long userId = 1L;
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
-        Coupon coupon = Coupon.create(
-                "테스트 쿠폰",
-                DiscountType.AMOUNT,
-                new BigDecimal("5000"),
-                startDate,
-                endDate,
-                100
-        );
+        Coupon coupon = Coupon.builder()
+                .couponName("테스트 쿠폰")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(new BigDecimal("5000"))
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(100)
+                .build();
         MemberCoupon memberCoupon = MemberCoupon.issue(userId, coupon);
 
         // when
@@ -143,14 +143,14 @@ class MemberCouponTest {
         Long userId = 1L;
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
-        Coupon coupon = Coupon.create(
-                "테스트 쿠폰",
-                DiscountType.AMOUNT,
-                new BigDecimal("5000"),
-                startDate,
-                endDate,
-                100
-        );
+        Coupon coupon = Coupon.builder()
+                .couponName("테스트 쿠폰")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(new BigDecimal("5000"))
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(100)
+                .build();
         MemberCoupon memberCoupon = MemberCoupon.issue(userId, coupon);
 
         // when & then
@@ -167,14 +167,14 @@ class MemberCouponTest {
         Long userId = 1L;
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
-        Coupon coupon = Coupon.create(
-                "테스트 쿠폰",
-                DiscountType.AMOUNT,
-                new BigDecimal("5000"),
-                startDate,
-                endDate,
-                100
-        );
+        Coupon coupon = Coupon.builder()
+                .couponName("테스트 쿠폰")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(new BigDecimal("5000"))
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(100)
+                .build();
         MemberCoupon memberCoupon = MemberCoupon.issue(userId, coupon);
 
         // when & then

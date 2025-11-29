@@ -33,20 +33,20 @@ public class SettlementDailyResponse {
 
     public static SettlementDailyResponse from(SettlementDaily daily, String brandName) {
         return SettlementDailyResponse.builder()
-            .settlementDailyId(daily.getId())
-            .brandId(daily.getBrandId())
-            .brandName(brandName)
-            .settlementDate(daily.getSettlementDate())
-            .settlementNumber(daily.getSettlementNumber())
-            .totalSalesAmount(daily.getTotalSalesAmount())
-            .totalCommissionAmount(daily.getTotalCommissionAmount())
-            .totalTaxAmount(daily.getTotalTaxAmount())
-            .totalPgFeeAmount(daily.getTotalPgFeeAmount())
-            .finalSettlementAmount(daily.getFinalSettlementAmount())
-            .totalOrderCount(daily.getTotalOrderCount())
-            .settlementStatus(daily.getSettlementStatus())
-            .aggregatedAt(daily.getAggregatedAt())
-            .completedAt(daily.getCompletedAt())
-            .build();
+                .settlementDailyId(daily.getId())
+                .brandId(daily.getBrandId())
+                .brandName(brandName)
+                .settlementDate(daily.getSettlementDate())
+                .settlementNumber(daily.getSettlementNumber())
+                .totalSalesAmount(daily.getTotalSalesAmount())
+                .totalCommissionAmount(daily.getTotalCommissionAmount())
+                .totalTaxAmount(daily.getTotalTaxAmount())
+                .totalPgFeeAmount(daily.getTotalPgFeeAmount())
+                .finalSettlementAmount(daily.getFinalSettlementAmount())
+                .totalOrderCount(daily.getTotalOrderCount())
+                .settlementStatus(daily.getSettlementStatus())
+                .aggregatedAt(daily.getAggregatedAt())
+                .completedAt(daily.getCompletedAt())
+                .build();
     }
 }

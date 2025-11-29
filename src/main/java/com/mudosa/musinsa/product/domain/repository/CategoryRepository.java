@@ -2,9 +2,11 @@ package com.mudosa.musinsa.product.domain.repository;
 
 import com.mudosa.musinsa.product.domain.model.Category;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
+import java.util.List;
 
 @Repository
 public interface CategoryRepository extends JpaRepository<Category, Long> {
@@ -59,4 +61,7 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     default boolean isValidPath(String path) {
         return findByPath(path) != null;
     }
+
+    @Query("select c from Category c left join fetch c.parent")
+    List<Category> findAllWithParent();
 }

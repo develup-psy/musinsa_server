@@ -22,10 +22,10 @@ public class AttachmentResponse {
 
   public static AttachmentResponse of(MessageAttachment entity) {
     return AttachmentResponse.builder()
-        .attachmentId(entity.getAttachmentId())
-        .attachmentUrl(entity.getAttachmentUrl())
-        .mimeType(entity.getMimeType())
-        .sizeBytes(entity.getSizeBytes())
-        .build();
+            .attachmentId(entity.getAttachmentId())
+            .attachmentUrl(entity.getAttachmentUrl())
+            .mimeType(entity.getMimeType())
+            .sizeBytes(entity.getSizeBytes())
+            .build();
   }
 }

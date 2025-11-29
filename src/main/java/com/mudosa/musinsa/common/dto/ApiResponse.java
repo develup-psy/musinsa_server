@@ -17,37 +17,37 @@ public class ApiResponse<T> {
 
   public static <T> ApiResponse<T> success(T data, String message) {
     return ApiResponse.<T>builder()
-        .success(true)
-        .data(data)
-        .message(message)
-        .timestamp(LocalDateTime.now())
-        .build();
+            .success(true)
+            .data(data)
+            .message(message)
+            .timestamp(LocalDateTime.now())
+            .build();
   }
 
   public static <T> ApiResponse<T> success(T data) {
     return ApiResponse.<T>builder()
-        .success(true)
-        .data(data)
-        .timestamp(LocalDateTime.now())
-        .build();
+            .success(true)
+            .data(data)
+            .timestamp(LocalDateTime.now())
+            .build();
   }
 
   public static <T> ApiResponse<T> failure(String errorCode, String message) {
     return ApiResponse.<T>builder()
-        .success(false)
-        .errorCode(errorCode)
-        .message(message)
-        .timestamp(LocalDateTime.now())
-        .build();
+            .success(false)
+            .errorCode(errorCode)
+            .message(message)
+            .timestamp(LocalDateTime.now())
+            .build();
   }
 
   public static <T> ApiResponse<T> failure(String errorCode, String message, T data) {
     return ApiResponse.<T>builder()
-        .success(false)
-        .errorCode(errorCode)
-        .message(message)
-        .data(data)
-        .timestamp(LocalDateTime.now())
-        .build();
+            .success(false)
+            .errorCode(errorCode)
+            .message(message)
+            .data(data)
+            .timestamp(LocalDateTime.now())
+            .build();
   }
 }

@@ -5,6 +5,8 @@ import com.mudosa.musinsa.exception.BusinessException;
 import com.mudosa.musinsa.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -18,6 +20,8 @@ import java.util.List;
 @Table(name = "coupon")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class Coupon extends BaseEntity {
 
     @Id
@@ -51,34 +55,17 @@ public class Coupon extends BaseEntity {
     private Integer totalQuantity;
 
     @Column(name = "issued_quantity", nullable = false)
+    @Builder.Default
     private Integer issuedQuantity = 0;
 
     @Column(name = "is_active", nullable = false)
+    @Builder.Default
     private Boolean isActive = true;
 
     // 쿠폰과 상품 매핑
     @OneToMany(mappedBy = "coupon", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<CouponProduct> couponProducts = new ArrayList<>();
-
-    public static Coupon create(
-            String couponName,
-            DiscountType discountType,
-            BigDecimal discountValue,
-            LocalDateTime startDate,
-            LocalDateTime endDate,
-            Integer totalQuantity
-    ) {
-        Coupon coupon = new Coupon();
-        coupon.couponName = couponName;
-        coupon.discountType = discountType;
-        coupon.discountValue = discountValue;
-        coupon.startDate = startDate;
-        coupon.endDate = endDate;
-        coupon.totalQuantity = totalQuantity;
-        coupon.issuedQuantity = 0;
-        coupon.isActive = true;
-        return coupon;
-    }
 
     public void validateAvailability(BigDecimal orderAmount) {
         // 1. 활성화 상태 검증
@@ -189,23 +176,6 @@ public class Coupon extends BaseEntity {
         int issued = (this.issuedQuantity == null ? 0 : this.issuedQuantity);
         return Math.max(0, this.totalQuantity - issued);
     }
-
-
-    // 3. 쿠폰이 특정 상품에 적용 가능한가 ? => CouponProduct 서비스로 이전 , 쿠폰 자신의 상태/불변식이 아님 !
-
-
-
-//    public boolean isApplicableToProduct(Long productId) {
-//        if ( productId == null ) {
-//            return false;
-//        }
-//
-//        if (this.couponProducts.isEmpty()) {
-//            return false;
-//        }
-//        return this.couponProducts.stream() // 스트림으로 돌려서 상품Id가 같은게 하나라도 있다면 true
-//                .anyMatch(cp -> productId.equals(cp.getProductId()));
-//    }
 
 
 

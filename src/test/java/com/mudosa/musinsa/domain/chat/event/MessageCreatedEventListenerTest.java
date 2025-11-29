@@ -45,36 +45,36 @@ class MessageCreatedEventListenerTest extends ServiceConfig {
 
   private Brand saveBrand(String nameKo, String nameEn) {
     return Brand.builder()
-        .nameKo(nameKo)
-        .nameEn(nameEn)
-        .commissionRate(BigDecimal.valueOf(10.00))
-        .status(BrandStatus.ACTIVE)
-        .build();
+            .nameKo(nameKo)
+            .nameEn(nameEn)
+            .commissionRate(BigDecimal.valueOf(10.00))
+            .status(BrandStatus.ACTIVE)
+            .build();
   }
 
   private ChatRoom saveChatRoom(Brand brand) {
     return ChatRoom.builder()
-        .brand(brand)
-        .type(ChatRoomType.GROUP)
-        .build();
+            .brand(brand)
+            .type(ChatRoomType.GROUP)
+            .build();
   }
 
   private ChatPart saveChatPartOfUser(ChatRoom chatRoom, User user) {
     return ChatPart.builder()
-        .chatRoom(chatRoom)
-        .user(user)
-        .role(ChatPartRole.USER)
-        .build();
+            .chatRoom(chatRoom)
+            .user(user)
+            .role(ChatPartRole.USER)
+            .build();
   }
 
   //메시지 생성
   private Message saveMessage(ChatPart chatPart, String content, LocalDateTime timestamp) {
     // 1. Message 생성 및 저장
     return Message.builder()
-        .chatPart(chatPart)
-        .content(content)
-        .createdAt(timestamp)
-        .build();
+            .chatPart(chatPart)
+            .content(content)
+            .createdAt(timestamp)
+            .build();
 
   }
 

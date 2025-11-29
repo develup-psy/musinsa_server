@@ -93,30 +93,30 @@ class ChatServiceImplTest extends ServiceConfig {
 
   private Brand saveBrand(String nameKo, String nameEn) {
     Brand brand = Brand.builder()
-        .nameKo(nameKo)
-        .nameEn(nameEn)
-        .commissionRate(BigDecimal.valueOf(10.00))
-        .status(BrandStatus.ACTIVE)
-        .build();
+            .nameKo(nameKo)
+            .nameEn(nameEn)
+            .commissionRate(BigDecimal.valueOf(10.00))
+            .status(BrandStatus.ACTIVE)
+            .build();
     brandRepository.save(brand);
     return brand;
   }
 
   private ChatRoom saveChatRoom(Brand brand) {
     ChatRoom chatRoom = ChatRoom.builder()
-        .brand(brand)
-        .type(ChatRoomType.GROUP)
-        .build();
+            .brand(brand)
+            .type(ChatRoomType.GROUP)
+            .build();
     chatRoomRepository.save(chatRoom);
     return chatRoom;
   }
 
   private ChatPart saveChatPartOfUser(ChatRoom chatRoom, User user) {
     ChatPart chatPart = ChatPart.builder()
-        .chatRoom(chatRoom)
-        .user(user)
-        .role(ChatPartRole.USER)
-        .build();
+            .chatRoom(chatRoom)
+            .user(user)
+            .role(ChatPartRole.USER)
+            .build();
     return chatPartRepository.save(chatPart);
   }
 
@@ -124,11 +124,11 @@ class ChatServiceImplTest extends ServiceConfig {
   private Message saveMessage(ChatPart chatPart, String content, LocalDateTime timestamp) {
     // 1. Message 생성 및 저장
     Message message = Message.builder()
-        .chatPart(chatPart)
-        .chatId(chatPart.getChatRoom().getChatId())
-        .content(content)
-        .createdAt(timestamp)
-        .build();
+            .chatPart(chatPart)
+            .chatId(chatPart.getChatRoom().getChatId())
+            .content(content)
+            .createdAt(timestamp)
+            .build();
 
     messageRepository.save(message); // id 확보
 
@@ -138,12 +138,12 @@ class ChatServiceImplTest extends ServiceConfig {
   private void saveMessageWithParent(ChatPart chatPart, LocalDateTime timestamp, Message parent) {
     // 1. Message 생성 및 저장
     Message message = Message.builder()
-        .parent(parent)
-        .chatPart(chatPart)
-        .chatId(chatPart.getChatRoom().getChatId())
-        .content("child")
-        .createdAt(timestamp)
-        .build();
+            .parent(parent)
+            .chatPart(chatPart)
+            .chatId(chatPart.getChatRoom().getChatId())
+            .content("child")
+            .createdAt(timestamp)
+            .build();
 
     messageRepository.save(message); // id 확보
 
@@ -152,11 +152,11 @@ class ChatServiceImplTest extends ServiceConfig {
   private void saveMessageWithAttachments(ChatPart chatPart, String content, LocalDateTime timestamp, List<MessageAttachment> attachments) {
     // 1. Message 생성 및 저장
     Message message = Message.builder()
-        .chatPart(chatPart)
-        .chatId(chatPart.getChatRoom().getChatId())
-        .content(content)
-        .createdAt(timestamp)
-        .build();
+            .chatPart(chatPart)
+            .chatId(chatPart.getChatRoom().getChatId())
+            .content(content)
+            .createdAt(timestamp)
+            .build();
 
     messageRepository.save(message); // id 확보
 
@@ -178,10 +178,10 @@ class ChatServiceImplTest extends ServiceConfig {
 
   private MessageAttachment createMessageAttachment(String fileName) {
     return MessageAttachment.builder()
-        .attachmentUrl(String.format("http://mudosa/uploads/chat/1/%s.png", fileName))
-        .mimeType("image/png")
-        .sizeBytes(123L)
-        .build();
+            .attachmentUrl(String.format("http://mudosa/uploads/chat/1/%s.png", fileName))
+            .mimeType("image/png")
+            .sizeBytes(123L)
+            .build();
   }
 
   // 최신순 정렬 검증 (Slice 버전)

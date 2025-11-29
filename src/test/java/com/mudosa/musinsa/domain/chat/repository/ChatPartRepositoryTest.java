@@ -45,20 +45,20 @@ class ChatPartRepositoryTest extends ServiceConfig {
   // 브랜드 생성 & 저장
   private Brand saveBrand(String nameKo, String nameEn) {
     return brandRepository.save(Brand.builder()
-        .nameKo(nameKo)
-        .nameEn(nameEn)
-        .commissionRate(BigDecimal.valueOf(10.00))
-        .status(BrandStatus.ACTIVE)
-        .build());
+            .nameKo(nameKo)
+            .nameEn(nameEn)
+            .commissionRate(BigDecimal.valueOf(10.00))
+            .status(BrandStatus.ACTIVE)
+            .build());
   }
 
   // 채팅방 생성 & 저장
   private ChatRoom saveChatRoom(Brand brand, ChatRoomType type) {
     return chatRoomRepository.save(
         ChatRoom.builder()
-            .brand(brand)
-            .type(type)
-            .build()
+                .brand(brand)
+                .type(type)
+                .build()
     );
   }
 
@@ -66,10 +66,10 @@ class ChatPartRepositoryTest extends ServiceConfig {
   private ChatPart saveChatPart(ChatRoom chatRoom, User user) {
     return chatPartRepository.save(
         ChatPart.builder()
-            .chatRoom(chatRoom)
-            .user(user)
-            .role(ChatPartRole.USER)
-            .build()
+                .chatRoom(chatRoom)
+                .user(user)
+                .role(ChatPartRole.USER)
+                .build()
     );
   }
 

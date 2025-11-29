@@ -47,18 +47,18 @@ public class SettlementStatisticsResponse {
         Integer totalOrderCount
     ) {
         return SettlementStatisticsResponse.builder()
-            .brandId(brandId)
-            .brandName(brandName)
-            .todaySalesAmount(todaySalesAmount)
-            .todayOrderCount(todayOrderCount)
-            .thisWeekSalesAmount(thisWeekSalesAmount)
-            .thisWeekOrderCount(thisWeekOrderCount)
-            .thisMonthSalesAmount(thisMonthSalesAmount)
-            .thisMonthOrderCount(thisMonthOrderCount)
-            .thisYearSalesAmount(thisYearSalesAmount)
-            .thisYearOrderCount(thisYearOrderCount)
-            .totalSalesAmount(totalSalesAmount)
-            .totalOrderCount(totalOrderCount)
-            .build();
+                .brandId(brandId)
+                .brandName(brandName)
+                .todaySalesAmount(todaySalesAmount)
+                .todayOrderCount(todayOrderCount)
+                .thisWeekSalesAmount(thisWeekSalesAmount)
+                .thisWeekOrderCount(thisWeekOrderCount)
+                .thisMonthSalesAmount(thisMonthSalesAmount)
+                .thisMonthOrderCount(thisMonthOrderCount)
+                .thisYearSalesAmount(thisYearSalesAmount)
+                .thisYearOrderCount(thisYearOrderCount)
+                .totalSalesAmount(totalSalesAmount)
+                .totalOrderCount(totalOrderCount)
+                .build();
     }
 }

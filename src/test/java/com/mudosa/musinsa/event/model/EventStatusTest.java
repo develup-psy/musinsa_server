@@ -16,16 +16,16 @@ class EventStatusTest {
         // given
         LocalDateTime startedAt = LocalDateTime.of(2025, 11, 20, 0, 0);
         LocalDateTime endedAt = LocalDateTime.of(2025, 12, 20, 23, 59);
-        Event event = Event.create(
-                "테스트 이벤트",
-                "설명",
-                Event.EventType.DROP,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                null
-        );
+        Event event = Event.builder()
+                .title("테스트 이벤트")
+                .description("설명")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(null)
+                .build();
         LocalDateTime currentTime = LocalDateTime.of(2025, 11, 19, 23, 59);
 
         // when
@@ -41,16 +41,16 @@ class EventStatusTest {
         // given
         LocalDateTime startedAt = LocalDateTime.of(2025, 11, 20, 0, 0);
         LocalDateTime endedAt = LocalDateTime.of(2025, 12, 20, 23, 59);
-        Event event = Event.create(
-                "테스트 이벤트",
-                "설명",
-                Event.EventType.DROP,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                null
-        );
+        Event event = Event.builder()
+                .title("테스트 이벤트")
+                .description("설명")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(null)
+                .build();
         LocalDateTime currentTime = LocalDateTime.of(2025, 11, 25, 12, 0);
 
         // when
@@ -66,16 +66,16 @@ class EventStatusTest {
         // given
         LocalDateTime startedAt = LocalDateTime.of(2025, 11, 20, 0, 0);
         LocalDateTime endedAt = LocalDateTime.of(2025, 12, 20, 23, 59);
-        Event event = Event.create(
-                "테스트 이벤트",
-                "설명",
-                Event.EventType.DROP,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                null
-        );
+        Event event = Event.builder()
+                .title("테스트 이벤트")
+                .description("설명")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(null)
+                .build();
         LocalDateTime currentTime = startedAt;
 
         // when
@@ -91,16 +91,16 @@ class EventStatusTest {
         // given
         LocalDateTime startedAt = LocalDateTime.of(2025, 11, 20, 0, 0);
         LocalDateTime endedAt = LocalDateTime.of(2025, 12, 20, 23, 59);
-        Event event = Event.create(
-                "테스트 이벤트",
-                "설명",
-                Event.EventType.DROP,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                null
-        );
+        Event event = Event.builder()
+                .title("테스트 이벤트")
+                .description("설명")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(null)
+                .build();
         LocalDateTime currentTime = LocalDateTime.of(2025, 12, 21, 0, 0);
 
         // when
@@ -116,16 +116,16 @@ class EventStatusTest {
         // given
         LocalDateTime startedAt = LocalDateTime.of(2025, 11, 20, 0, 0);
         LocalDateTime endedAt = LocalDateTime.of(2025, 12, 20, 23, 59);
-        Event event = Event.create(
-                "테스트 이벤트",
-                "설명",
-                Event.EventType.DROP,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                null
-        );
+        Event event = Event.builder()
+                .title("테스트 이벤트")
+                .description("설명")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(null)
+                .build();
         LocalDateTime currentTime = endedAt.plusMinutes(1);
 
         // when

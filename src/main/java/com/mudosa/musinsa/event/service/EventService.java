@@ -78,6 +78,9 @@ public class EventService {
                         eo.getProductOption().getProductOptionId(),      // productOptionId
                         eo.getProductOption().getProduct().getProductName(),  // productName
                         null,                                            // optionLabel (미사용)
+                        eo.getProductOption().getProductPrice() != null
+                                ? eo.getProductOption().getProductPrice().getAmount()
+                                : null,
                         eo.getEventPrice(),                              // eventPrice
                         eo.getEventStock(),                              // eventStock
                         eo.getProductOption().getProduct().getProductId()     // productId

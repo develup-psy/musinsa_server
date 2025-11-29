@@ -19,26 +19,26 @@ class EventTest {
         // given
         LocalDateTime startedAt = LocalDateTime.of(2025, 11, 20, 0, 0);
         LocalDateTime endedAt = LocalDateTime.of(2025, 12, 20, 23, 59);
-        Coupon coupon = Coupon.create(
-                "테스트 쿠폰",
-                DiscountType.AMOUNT,
-                new BigDecimal("10000"),
-                startedAt,
-                endedAt,
-                100
-        );
+        Coupon coupon = Coupon.builder()
+                .couponName("테스트 쿠폰")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(new BigDecimal("10000"))
+                .startDate(startedAt)
+                .endDate(endedAt)
+                .totalQuantity(100)
+                .build();
 
         // when
-        Event event = Event.create(
-                "신상품 드롭 이벤트",
-                "2025년 겨울 신상품 드롭",
-                Event.EventType.DROP,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                coupon
-        );
+        Event event = Event.builder()
+                .title("신상품 드롭 이벤트")
+                .description("2025년 겨울 신상품 드롭")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(coupon)
+                .build();
 
         // then
         assertThat(event).isNotNull();
@@ -59,16 +59,16 @@ class EventTest {
         // given
         LocalDateTime startedAt = LocalDateTime.of(2025, 11, 20, 0, 0);
         LocalDateTime endedAt = LocalDateTime.of(2025, 12, 20, 23, 59);
-        Event event = Event.create(
-                "테스트 이벤트",
-                "설명",
-                Event.EventType.DROP,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                null
-        );
+        Event event = Event.builder()
+                .title("테스트 이벤트")
+                .description("설명")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(null)
+                .build();
 
         // when
         event.open();
@@ -83,16 +83,16 @@ class EventTest {
         // given
         LocalDateTime startedAt = LocalDateTime.of(2025, 11, 20, 0, 0);
         LocalDateTime endedAt = LocalDateTime.of(2025, 12, 20, 23, 59);
-        Event event = Event.create(
-                "테스트 이벤트",
-                "설명",
-                Event.EventType.DROP,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                null
-        );
+        Event event = Event.builder()
+                .title("테스트 이벤트")
+                .description("설명")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(null)
+                .build();
         event.open();
 
         // when
@@ -108,16 +108,16 @@ class EventTest {
         // given
         LocalDateTime startedAt = LocalDateTime.of(2025, 11, 20, 0, 0);
         LocalDateTime endedAt = LocalDateTime.of(2025, 12, 20, 23, 59);
-        Event event = Event.create(
-                "테스트 이벤트",
-                "설명",
-                Event.EventType.DROP,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                null
-        );
+        Event event = Event.builder()
+                .title("테스트 이벤트")
+                .description("설명")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(null)
+                .build();
 
         // when
         event.end();
@@ -132,16 +132,16 @@ class EventTest {
         // given
         LocalDateTime startedAt = LocalDateTime.of(2025, 11, 20, 0, 0);
         LocalDateTime endedAt = LocalDateTime.of(2025, 12, 20, 23, 59);
-        Event event = Event.create(
-                "테스트 이벤트",
-                "설명",
-                Event.EventType.DROP,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                null
-        );
+        Event event = Event.builder()
+                .title("테스트 이벤트")
+                .description("설명")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(null)
+                .build();
 
         // when
         event.cancel();
@@ -156,16 +156,16 @@ class EventTest {
         // given
         LocalDateTime startedAt = LocalDateTime.of(2025, 11, 20, 0, 0);
         LocalDateTime endedAt = LocalDateTime.of(2025, 12, 20, 23, 59);
-        Event event = Event.create(
-                "테스트 이벤트",
-                "설명",
-                Event.EventType.DROP,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                null
-        );
+        Event event = Event.builder()
+                .title("테스트 이벤트")
+                .description("설명")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(null)
+                .build();
         event.open();
         LocalDateTime now = LocalDateTime.of(2025, 11, 25, 12, 0);
 
@@ -182,16 +182,16 @@ class EventTest {
         // given
         LocalDateTime startedAt = LocalDateTime.of(2025, 11, 20, 0, 0);
         LocalDateTime endedAt = LocalDateTime.of(2025, 12, 20, 23, 59);
-        Event event = Event.create(
-                "테스트 이벤트",
-                "설명",
-                Event.EventType.DROP,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                null
-        );
+        Event event = Event.builder()
+                .title("테스트 이벤트")
+                .description("설명")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(null)
+                .build();
         event.open();
         LocalDateTime now = LocalDateTime.of(2025, 11, 19, 12, 0);
 
@@ -208,16 +208,16 @@ class EventTest {
         // given
         LocalDateTime startedAt = LocalDateTime.of(2025, 11, 20, 0, 0);
         LocalDateTime endedAt = LocalDateTime.of(2025, 12, 20, 23, 59);
-        Event event = Event.create(
-                "테스트 이벤트",
-                "설명",
-                Event.EventType.DROP,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                null
-        );
+        Event event = Event.builder()
+                .title("테스트 이벤트")
+                .description("설명")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(null)
+                .build();
         event.open();
         LocalDateTime now = LocalDateTime.of(2025, 12, 21, 0, 0);
 
@@ -234,16 +234,16 @@ class EventTest {
         // given
         LocalDateTime startedAt = LocalDateTime.of(2025, 11, 20, 0, 0);
         LocalDateTime endedAt = LocalDateTime.of(2025, 12, 20, 23, 59);
-        Event event = Event.create(
-                "테스트 이벤트",
-                "설명",
-                Event.EventType.DROP,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                null
-        );
+        Event event = Event.builder()
+                .title("테스트 이벤트")
+                .description("설명")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(null)
+                .build();
         // status는 DRAFT 상태
         LocalDateTime now = LocalDateTime.of(2025, 11, 25, 12, 0);
 
@@ -260,22 +260,22 @@ class EventTest {
         // given
         LocalDateTime startedAt = LocalDateTime.of(2025, 11, 20, 0, 0);
         LocalDateTime endedAt = LocalDateTime.of(2025, 12, 20, 23, 59);
-        Event event = Event.create(
-                "테스트 이벤트",
-                "설명",
-                Event.EventType.DROP,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                null
-        );
-        EventOption option = EventOption.create(
-                event,
-                null,
-                new BigDecimal("50000"),
-                100
-        );
+        Event event = Event.builder()
+                .title("테스트 이벤트")
+                .description("설명")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(null)
+                .build();
+        EventOption option = EventOption.builder()
+                .event(event)
+                .productOption(null)
+                .eventPrice(new BigDecimal("50000"))
+                .eventStock(100)
+                .build();
 
         // when
         event.addEventOption(option);
@@ -292,17 +292,20 @@ class EventTest {
         // given
         LocalDateTime startedAt = LocalDateTime.of(2025, 11, 20, 0, 0);
         LocalDateTime endedAt = LocalDateTime.of(2025, 12, 20, 23, 59);
-        Event event = Event.create(
-                "테스트 이벤트",
-                "설명",
-                Event.EventType.DROP,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                null
-        );
-        EventImage image = EventImage.create("https://example.com/image.jpg", true);
+        Event event = Event.builder()
+                .title("테스트 이벤트")
+                .description("설명")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(null)
+                .build();
+        EventImage image = EventImage.builder()
+                .imageUrl("https://example.com/image.jpg")
+                .isThumbnail(true)
+                .build();
 
         // when
         event.addEventImage(image);
@@ -319,24 +322,24 @@ class EventTest {
         // given
         LocalDateTime startedAt = LocalDateTime.of(2025, 11, 20, 0, 0);
         LocalDateTime endedAt = LocalDateTime.of(2025, 12, 20, 23, 59);
-        Event event = Event.create(
-                "테스트 이벤트",
-                "설명",
-                Event.EventType.DROP,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                null
-        );
-        Coupon coupon = Coupon.create(
-                "새 쿠폰",
-                DiscountType.AMOUNT,
-                new BigDecimal("5000"),
-                startedAt,
-                endedAt,
-                100
-        );
+        Event event = Event.builder()
+                .title("테스트 이벤트")
+                .description("설명")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(null)
+                .build();
+        Coupon coupon = Coupon.builder()
+                .couponName("새 쿠폰")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(new BigDecimal("5000"))
+                .startDate(startedAt)
+                .endDate(endedAt)
+                .totalQuantity(100)
+                .build();
 
         // when
         event.assignCoupon(coupon);

@@ -33,10 +33,10 @@ public class MessageAttachment {
 
   public static MessageAttachment create(Message message, MultipartFile file, String storedUrl) {
     return MessageAttachment.builder()
-        .attachmentUrl(storedUrl)
-        .message(message)
-        .mimeType(file.getContentType())
-        .sizeBytes(file.getSize())
-        .build();
+            .attachmentUrl(storedUrl)
+            .message(message)
+            .mimeType(file.getContentType())
+            .sizeBytes(file.getSize())
+            .build();
   }
 }

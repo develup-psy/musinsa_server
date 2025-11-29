@@ -27,14 +27,14 @@ class CouponRepositoryTest extends ServiceConfig {
         // given
         LocalDateTime startDate = LocalDateTime.of(2025, 11, 20, 0, 0);
         LocalDateTime endDate = LocalDateTime.of(2025, 12, 20, 23, 59);
-        Coupon coupon = Coupon.create(
-                "신규 가입 쿠폰",
-                DiscountType.AMOUNT,
-                new BigDecimal("10000"),
-                startDate,
-                endDate,
-                100
-        );
+        Coupon coupon = Coupon.builder()
+                .couponName("신규 가입 쿠폰")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(new BigDecimal("10000"))
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(100)
+                .build();
 
         // when
         Coupon savedCoupon = couponRepository.save(coupon);
@@ -52,14 +52,14 @@ class CouponRepositoryTest extends ServiceConfig {
         // given
         LocalDateTime startDate = LocalDateTime.of(2025, 11, 20, 0, 0);
         LocalDateTime endDate = LocalDateTime.of(2025, 12, 20, 23, 59);
-        Coupon coupon = Coupon.create(
-                "테스트 쿠폰",
-                DiscountType.PERCENTAGE,
-                new BigDecimal("10"),
-                startDate,
-                endDate,
-                50
-        );
+        Coupon coupon = Coupon.builder()
+                .couponName("테스트 쿠폰")
+                .discountType(DiscountType.PERCENTAGE)
+                .discountValue(new BigDecimal("10"))
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(50)
+                .build();
         Coupon savedCoupon = couponRepository.save(coupon);
 
         // when
@@ -77,14 +77,14 @@ class CouponRepositoryTest extends ServiceConfig {
         // given
         LocalDateTime startDate = LocalDateTime.of(2025, 11, 20, 0, 0);
         LocalDateTime endDate = LocalDateTime.of(2025, 12, 20, 23, 59);
-        Coupon coupon = Coupon.create(
-                "락 테스트 쿠폰",
-                DiscountType.AMOUNT,
-                new BigDecimal("5000"),
-                startDate,
-                endDate,
-                100
-        );
+        Coupon coupon = Coupon.builder()
+                .couponName("락 테스트 쿠폰")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(new BigDecimal("5000"))
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(100)
+                .build();
         Coupon savedCoupon = couponRepository.save(coupon);
 
         // when

@@ -48,11 +48,11 @@ class MessageAttachmentRepositoryTest extends ServiceConfig {
   // 브랜드 생성 & 저장
   private Brand saveBrand(String nameKo, String nameEn) {
     Brand brand = brandRepository.save(Brand.builder()
-        .nameKo(nameKo)
-        .nameEn(nameEn)
-        .commissionRate(BigDecimal.valueOf(10.00))
-        .status(BrandStatus.ACTIVE)
-        .build());
+            .nameKo(nameKo)
+            .nameEn(nameEn)
+            .commissionRate(BigDecimal.valueOf(10.00))
+            .status(BrandStatus.ACTIVE)
+            .build());
     return brand;
   }
 
@@ -60,9 +60,9 @@ class MessageAttachmentRepositoryTest extends ServiceConfig {
   private ChatRoom saveChatRoom(Brand brand, ChatRoomType type) {
     return chatRoomRepository.save(
         ChatRoom.builder()
-            .brand(brand)
-            .type(type)
-            .build()
+                .brand(brand)
+                .type(type)
+                .build()
     );
   }
 
@@ -70,10 +70,10 @@ class MessageAttachmentRepositoryTest extends ServiceConfig {
   private ChatPart saveChatPart(ChatRoom chatRoom, User user) {
     return chatPartRepository.save(
         ChatPart.builder()
-            .chatRoom(chatRoom)
-            .user(user)
-            .role(ChatPartRole.USER)
-            .build()
+                .chatRoom(chatRoom)
+                .user(user)
+                .role(ChatPartRole.USER)
+                .build()
     );
   }
 
@@ -81,11 +81,11 @@ class MessageAttachmentRepositoryTest extends ServiceConfig {
   private Message saveMessageWithAttachments(ChatPart chatPart, String content, List<MessageAttachment> attachments) {
     // 1. Message 생성 및 저장
     Message message = Message.builder()
-        .chatPart(chatPart)
-        .chatId(chatPart.getChatRoom().getChatId())
-        .content(content)
-        .createdAt(LocalDateTime.now())
-        .build();
+            .chatPart(chatPart)
+            .chatId(chatPart.getChatRoom().getChatId())
+            .content(content)
+            .createdAt(LocalDateTime.now())
+            .build();
 
     messageRepository.save(message); // id 확보
 
@@ -103,10 +103,10 @@ class MessageAttachmentRepositoryTest extends ServiceConfig {
 
   private MessageAttachment createMessageAttachment(String fileName) {
     return MessageAttachment.builder()
-        .attachmentUrl(String.format("http://mudosa/uploads/chat/1/%s.png", fileName))
-        .mimeType("image/png")
-        .sizeBytes(123L)
-        .build();
+            .attachmentUrl(String.format("http://mudosa/uploads/chat/1/%s.png", fileName))
+            .mimeType("image/png")
+            .sizeBytes(123L)
+            .build();
   }
 
   /* === findAllByMessageIdIn 메서드 테스트 === */

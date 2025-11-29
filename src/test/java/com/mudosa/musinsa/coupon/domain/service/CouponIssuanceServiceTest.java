@@ -19,6 +19,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+
 @DisplayName("CouponIssuanceService 테스트")
 @Transactional
 class CouponIssuanceServiceTest extends ServiceConfig {
@@ -40,14 +41,14 @@ class CouponIssuanceServiceTest extends ServiceConfig {
         Long productId = 100L;
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
-        Coupon coupon = Coupon.create(
-                "발급 테스트 쿠폰",
-                DiscountType.AMOUNT,
-                new BigDecimal("5000"),
-                startDate,
-                endDate,
-                100
-        );
+        Coupon coupon = Coupon.builder()
+                .couponName("발급 테스트 쿠폰")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(new BigDecimal("5000"))
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(100)
+                .build();
         Coupon savedCoupon = couponRepository.save(coupon);
 
         // when
@@ -68,14 +69,14 @@ class CouponIssuanceServiceTest extends ServiceConfig {
         Long productId = 100L;
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
-        Coupon coupon = Coupon.create(
-                "중복 테스트 쿠폰",
-                DiscountType.AMOUNT,
-                new BigDecimal("5000"),
-                startDate,
-                endDate,
-                100
-        );
+        Coupon coupon = Coupon.builder()
+                .couponName("중복 테스트 쿠폰")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(new BigDecimal("5000"))
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(100)
+                .build();
         Coupon savedCoupon = couponRepository.save(coupon);
 
         // 첫 번째 발급
@@ -111,14 +112,14 @@ class CouponIssuanceServiceTest extends ServiceConfig {
         Long productId = 100L;
         LocalDateTime startDate = LocalDateTime.now().plusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
-        Coupon coupon = Coupon.create(
-                "기간 외 쿠폰",
-                DiscountType.AMOUNT,
-                new BigDecimal("5000"),
-                startDate,
-                endDate,
-                100
-        );
+        Coupon coupon = Coupon.builder()
+                .couponName("기간 외 쿠폰")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(new BigDecimal("5000"))
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(100)
+                .build();
         Coupon savedCoupon = couponRepository.save(coupon);
 
         // when & then
@@ -134,14 +135,14 @@ class CouponIssuanceServiceTest extends ServiceConfig {
         Long productId = 100L;
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
-        Coupon coupon = Coupon.create(
-                "조회 테스트 쿠폰",
-                DiscountType.AMOUNT,
-                new BigDecimal("5000"),
-                startDate,
-                endDate,
-                100
-        );
+        Coupon coupon = Coupon.builder()
+                .couponName("조회 테스트 쿠폰")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(new BigDecimal("5000"))
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(100)
+                .build();
         Coupon savedCoupon = couponRepository.save(coupon);
         couponIssuanceService.issueCoupon(userId, savedCoupon.getId(), productId);
 
@@ -161,14 +162,14 @@ class CouponIssuanceServiceTest extends ServiceConfig {
         Long productId = 100L;
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
-        Coupon coupon = Coupon.create(
-                "카운트 테스트 쿠폰",
-                DiscountType.AMOUNT,
-                new BigDecimal("5000"),
-                startDate,
-                endDate,
-                100
-        );
+        Coupon coupon = Coupon.builder()
+                .couponName("카운트 테스트 쿠폰")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(new BigDecimal("5000"))
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(100)
+                .build();
         Coupon savedCoupon = couponRepository.save(coupon);
         couponIssuanceService.issueCoupon(userId, savedCoupon.getId(), productId);
 
@@ -207,3 +208,4 @@ class CouponIssuanceServiceTest extends ServiceConfig {
         assertThat(count).isEqualTo(0);
     }
 }
+

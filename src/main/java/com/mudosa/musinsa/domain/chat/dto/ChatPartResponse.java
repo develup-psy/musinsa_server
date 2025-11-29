@@ -38,11 +38,11 @@ public class ChatPartResponse {
    */
   public static ChatPartResponse of(ChatPart chatPart) {
     return ChatPartResponse.builder()
-        .chatPartId(chatPart.getChatPartId())
-        .userId(chatPart.getUser().getId())
-        .chatId(chatPart.getChatRoom().getChatId())
-        .userName(chatPart.getUser().getUserName())
-        .createdAt(chatPart.getCreatedAt())
-        .build();
+            .chatPartId(chatPart.getChatPartId())
+            .userId(chatPart.getUser().getId())
+            .chatId(chatPart.getChatRoom().getChatId())
+            .userName(chatPart.getUser().getUserName())
+            .createdAt(chatPart.getCreatedAt())
+            .build();
   }
 }

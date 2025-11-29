@@ -32,16 +32,16 @@ class EventRepositoryTest extends ServiceConfig {
         // given
         LocalDateTime startedAt = LocalDateTime.of(2025, 11, 20, 0, 0);
         LocalDateTime endedAt = LocalDateTime.of(2025, 12, 20, 23, 59);
-        Event event = Event.create(
-                "신상품 드롭 이벤트",
-                "2025년 겨울 신상품 드롭",
-                Event.EventType.DROP,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                null
-        );
+        Event event = Event.builder()
+                .title("신상품 드롭 이벤트")
+                .description("2025년 겨울 신상품 드롭")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(null)
+                .build();
 
         // when
         Event savedEvent = eventRepository.save(event);
@@ -58,16 +58,16 @@ class EventRepositoryTest extends ServiceConfig {
         // given
         LocalDateTime startedAt = LocalDateTime.of(2025, 11, 20, 0, 0);
         LocalDateTime endedAt = LocalDateTime.of(2025, 12, 20, 23, 59);
-        Event event = Event.create(
-                "테스트 이벤트",
-                "설명",
-                Event.EventType.DROP,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                null
-        );
+        Event event = Event.builder()
+                .title("테스트 이벤트")
+                .description("설명")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(null)
+                .build();
         Event savedEvent = eventRepository.save(event);
 
         // when
@@ -86,26 +86,26 @@ class EventRepositoryTest extends ServiceConfig {
         LocalDateTime startedAt = LocalDateTime.of(2025, 11, 20, 0, 0);
         LocalDateTime endedAt = LocalDateTime.of(2025, 12, 20, 23, 59);
 
-        Event dropEvent = Event.create(
-                "드롭 이벤트",
-                "드롭 설명",
-                Event.EventType.DROP,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                null
-        );
-        Event commentEvent = Event.create(
-                "댓글 이벤트",
-                "댓글 설명",
-                Event.EventType.COMMENT,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                null
-        );
+        Event dropEvent = Event.builder()
+                .title("드롭 이벤트")
+                .description("드롭 설명")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(null)
+                .build();
+        Event commentEvent = Event.builder()
+                .title("댓글 이벤트")
+                .description("댓글 설명")
+                .eventType(Event.EventType.COMMENT)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(null)
+                .build();
         eventRepository.save(dropEvent);
         eventRepository.save(commentEvent);
 
@@ -124,16 +124,16 @@ class EventRepositoryTest extends ServiceConfig {
         LocalDateTime startedAt = LocalDateTime.of(2025, 11, 20, 0, 0);
         LocalDateTime endedAt = LocalDateTime.of(2025, 12, 20, 23, 59);
 
-        Event commentEvent = Event.create(
-                "댓글 이벤트",
-                "댓글 설명",
-                Event.EventType.COMMENT,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                null
-        );
+        Event commentEvent = Event.builder()
+                .title("댓글 이벤트")
+                .description("댓글 설명")
+                .eventType(Event.EventType.COMMENT)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(null)
+                .build();
         eventRepository.save(commentEvent);
 
         // when
@@ -151,16 +151,16 @@ class EventRepositoryTest extends ServiceConfig {
         LocalDateTime startedAt = LocalDateTime.of(2025, 11, 1, 0, 0);
         LocalDateTime endedAt = LocalDateTime.of(2025, 11, 10, 23, 59);
 
-        Event event = Event.create(
-                "종료 예정 이벤트",
-                "설명",
-                Event.EventType.DROP,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                null
-        );
+        Event event = Event.builder()
+                .title("종료 예정 이벤트")
+                .description("설명")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(null)
+                .build();
         event.open();
         eventRepository.save(event);
 
@@ -183,26 +183,26 @@ class EventRepositoryTest extends ServiceConfig {
         LocalDateTime startedAt = LocalDateTime.of(2025, 11, 5, 0, 0);
         LocalDateTime endedAt = LocalDateTime.of(2025, 12, 20, 23, 59);
 
-        Coupon coupon = Coupon.create(
-                "테스트 쿠폰",
-                DiscountType.AMOUNT,
-                new BigDecimal("10000"),
-                startedAt,
-                endedAt,
-                100
-        );
+        Coupon coupon = Coupon.builder()
+                .couponName("테스트 쿠폰")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(new BigDecimal("10000"))
+                .startDate(startedAt)
+                .endDate(endedAt)
+                .totalQuantity(100)
+                .build();
         couponRepository.save(coupon);
 
-        Event event = Event.create(
-                "시작 예정 이벤트",
-                "설명",
-                Event.EventType.DROP,
-                1,
-                true,
-                startedAt,
-                endedAt,
-                coupon
-        );
+        Event event = Event.builder()
+                .title("시작 예정 이벤트")
+                .description("설명")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .coupon(coupon)
+                .build();
         // PLANNED 상태를 시뮬레이션하기 위해 DRAFT 상태로 유지
         eventRepository.save(event);
 

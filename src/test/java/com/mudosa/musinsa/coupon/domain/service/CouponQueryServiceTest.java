@@ -39,22 +39,22 @@ class CouponQueryServiceTest extends ServiceConfig {
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
 
-        Coupon coupon1 = Coupon.create(
-                "테스트 쿠폰1",
-                DiscountType.AMOUNT,
-                new BigDecimal("5000"),
-                startDate,
-                endDate,
-                100
-        );
-        Coupon coupon2 = Coupon.create(
-                "테스트 쿠폰2",
-                DiscountType.PERCENTAGE,
-                new BigDecimal("10"),
-                startDate,
-                endDate,
-                50
-        );
+        Coupon coupon1 = Coupon.builder()
+                .couponName("테스트 쿠폰1")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(new BigDecimal("5000"))
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(100)
+                .build();
+        Coupon coupon2 = Coupon.builder()
+                .couponName("테스트 쿠폰2")
+                .discountType(DiscountType.PERCENTAGE)
+                .discountValue(new BigDecimal("10"))
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(50)
+                .build();
         Coupon savedCoupon1 = couponRepository.save(coupon1);
         Coupon savedCoupon2 = couponRepository.save(coupon2);
 
@@ -80,14 +80,14 @@ class CouponQueryServiceTest extends ServiceConfig {
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
 
-        Coupon coupon = Coupon.create(
-                "사용 가능 쿠폰",
-                DiscountType.AMOUNT,
-                new BigDecimal("5000"),
-                startDate,
-                endDate,
-                100
-        );
+        Coupon coupon = Coupon.builder()
+                .couponName("사용 가능 쿠폰")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(new BigDecimal("5000"))
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(100)
+                .build();
         Coupon savedCoupon = couponRepository.save(coupon);
 
         MemberCoupon memberCoupon = MemberCoupon.issue(userId, savedCoupon);

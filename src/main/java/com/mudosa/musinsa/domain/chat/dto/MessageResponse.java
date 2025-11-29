@@ -56,13 +56,13 @@ public class MessageResponse {
           .toList();
 
       parentDto = ParentMessageResponse.builder()
-          .messageId(parent.getMessageId())
-          .userId(parent.getChatPart().getUser().getId())
-          .userName(parent.getChatPart().getUser().getUserName())
-          .content(parent.getContent())
-          .createdAt(parent.getCreatedAt())
-          .attachments(parentAttachmentDtos)
-          .build();
+              .messageId(parent.getMessageId())
+              .userId(parent.getChatPart().getUser().getId())
+              .userName(parent.getChatPart().getUser().getUserName())
+              .content(parent.getContent())
+              .createdAt(parent.getCreatedAt())
+              .attachments(parentAttachmentDtos)
+              .build();
     }
 
     // 2) 현재 메시지 첨부 → DTO 변환
@@ -78,16 +78,16 @@ public class MessageResponse {
     String userName = message.getChatPart().getUser().getUserName();
 
     return MessageResponse.builder()
-        .messageId(message.getMessageId())
-        .chatId(chatId)
-        .chatPartId(chatPartId)
-        .userId(userId)
-        .userName(userName)
-        .content(message.getContent())
-        .attachments(attachmentDtos)
-        .createdAt(message.getCreatedAt())
-        .isDeleted(message.getDeletedAt() != null)
-        .parent(parentDto)
-        .build();
+            .messageId(message.getMessageId())
+            .chatId(chatId)
+            .chatPartId(chatPartId)
+            .userId(userId)
+            .userName(userName)
+            .content(message.getContent())
+            .attachments(attachmentDtos)
+            .createdAt(message.getCreatedAt())
+            .isDeleted(message.getDeletedAt() != null)
+            .parent(parentDto)
+            .build();
   }
 }

@@ -81,7 +81,14 @@ class MemberCouponRepositoryImplTest extends ServiceConfig {
 
     private Coupon createCoupon(String name){
         LocalDateTime baseDateTime = LocalDateTime.of(2025, 11, 12, 0, 0);
-        return Coupon.create(name, DiscountType.AMOUNT, new BigDecimal(10000), baseDateTime, baseDateTime.plusDays(10), 10);
+        return Coupon.builder()
+                .couponName(name)
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(new BigDecimal(10000))
+                .startDate(baseDateTime)
+                .endDate(baseDateTime.plusDays(10))
+                .totalQuantity(10)
+                .build();
     }
 
 }

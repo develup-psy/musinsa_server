@@ -37,13 +37,13 @@ public class ProductSearchRequest {
         Pageable pageable = createPageable();
 
         return ProductSearchCondition.builder()
-            .keyword(keyword)
-            .categoryPaths(categoryPaths != null ? categoryPaths : Collections.emptyList())
-            .gender(genderType)
-            .brandId(brandId)
-            .priceSort(sort)
-            .pageable(pageable)
-            .build();
+                .keyword(keyword)
+                .categoryPaths(categoryPaths != null ? categoryPaths : Collections.emptyList())
+                .gender(genderType)
+                .brandId(brandId)
+                .priceSort(sort)
+                .pageable(pageable)
+                .build();
     }
 
     // 문자열 성별 값을 ENUM으로 변환한다.

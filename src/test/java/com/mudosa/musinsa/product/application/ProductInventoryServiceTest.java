@@ -1,240 +1,348 @@
 package com.mudosa.musinsa.product.application;
 
+import com.mudosa.musinsa.ServiceConfig;
 import com.mudosa.musinsa.brand.domain.model.Brand;
-import com.mudosa.musinsa.brand.domain.repository.BrandMemberRepository;
+import com.mudosa.musinsa.brand.domain.model.BrandMember;
+import com.mudosa.musinsa.brand.domain.repository.BrandRepository;
 import com.mudosa.musinsa.exception.BusinessException;
-import com.mudosa.musinsa.product.application.dto.ProductOptionStockResponse;
+import com.mudosa.musinsa.exception.ErrorCode;
+import com.mudosa.musinsa.product.application.dto.ProductCreateRequest;
 import com.mudosa.musinsa.product.application.dto.StockAdjustmentRequest;
-import com.mudosa.musinsa.product.domain.model.*;
+import com.mudosa.musinsa.product.domain.model.Category;
+import com.mudosa.musinsa.product.domain.model.OptionValue;
+import com.mudosa.musinsa.product.domain.model.Product;
+import com.mudosa.musinsa.product.domain.model.ProductGenderType;
+import com.mudosa.musinsa.product.domain.model.ProductOption;
+import com.mudosa.musinsa.product.domain.repository.CategoryRepository;
 import com.mudosa.musinsa.product.domain.repository.InventoryRepository;
+import com.mudosa.musinsa.product.domain.repository.OptionValueRepository;
 import com.mudosa.musinsa.product.domain.repository.ProductOptionRepository;
 import com.mudosa.musinsa.product.domain.repository.ProductRepository;
-import com.mudosa.musinsa.product.domain.vo.StockQuantity;
-import com.mudosa.musinsa.common.vo.Money;
+import jakarta.transaction.Transactional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.springframework.beans.factory.annotation.Autowired;
 
-import java.lang.reflect.Field;
 import java.math.BigDecimal;
-import java.util.Optional;
+import java.util.List;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
-import static org.mockito.ArgumentMatchers.*;
 
-@ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.STRICT_STUBS)
-class ProductInventoryServiceTest {
+@DisplayName("ProductInventoryService 테스트")
+@Transactional
+class ProductInventoryServiceTest extends ServiceConfig {
 
-    @Mock
-    private ProductRepository productRepository;
+	@Autowired
+	private ProductInventoryService sut;
+	@Autowired
+	private ProductCommandService productCommandService;
+	@Autowired
+	private ProductRepository productRepository;
+	@Autowired
+	private ProductOptionRepository productOptionRepository;
+	@Autowired
+	private InventoryRepository inventoryRepository;
+	@Autowired
+	private BrandRepository brandRepository;
+	@Autowired
+	private CategoryRepository categoryRepository;
+	@Autowired
+	private OptionValueRepository optionValueRepository;
 
-    @Mock
-    private ProductOptionRepository productOptionRepository;
+	private Long userId;
+	private Long brandId;
+	private String categoryPath;
+	private Long sizeLId;
+	private Long sizeMId;
+	private Long colorBlackId;
 
-    @Mock
-    private InventoryRepository inventoryRepository;
+	@BeforeEach
+	void setUp() {
+		userId = 1L;
+		brandId = saveBrandWithMember(userId).getBrandId();
+		categoryPath = saveCategoryPath("상의", "티셔츠").buildPath();
+		sizeLId = saveOptionValue("사이즈", "L").getOptionValueId();
+		sizeMId = saveOptionValue("사이즈", "M").getOptionValueId();
+		colorBlackId = saveOptionValue("색상", "블랙").getOptionValueId();
+	}
 
-    @Mock
-    private BrandMemberRepository brandMemberRepository;
+	@Test
+	@DisplayName("브랜드 관리자는 상품 옵션 재고 현황을 조회할 수 있다.")
+	void getProductOptionStocks() {
+		// given
+		Long productId = createProduct(
+			"다중 옵션 티셔츠",
+			List.of(
+				optionRequest(BigDecimal.valueOf(10000), 5, List.of(sizeLId, colorBlackId)),
+				optionRequest(BigDecimal.valueOf(11000), 0, List.of(sizeMId, colorBlackId))
+			)
+		);
+		List<ProductOption> productOptions = findProductOptions(productId);
+		ProductOption inStockOption = productOptions.stream()
+			.filter(po -> po.getInventory().getStockQuantity().getValue() == 5)
+			.findFirst()
+			.orElseThrow();
+		ProductOption outOfStockOption = productOptions.stream()
+			.filter(po -> po.getInventory().getStockQuantity().getValue() == 0)
+			.findFirst()
+			.orElseThrow();
 
-    @InjectMocks
-    private ProductInventoryService service;
+		// when
+		var responses = sut.getProductOptionStocks(brandId, productId, userId);
 
-    private void setId(Object target, String fieldName, Long id) {
-        try {
-            Field f = target.getClass().getDeclaredField(fieldName);
-            f.setAccessible(true);
-            f.set(target, id);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
+		// then
+		assertThat(responses).hasSize(2);
+		var inStockResponse = responses.stream()
+			.filter(res -> res.getProductOptionId().equals(inStockOption.getProductOptionId()))
+			.findFirst()
+			.orElseThrow();
+		var outOfStockResponse = responses.stream()
+			.filter(res -> res.getProductOptionId().equals(outOfStockOption.getProductOptionId()))
+			.findFirst()
+			.orElseThrow();
 
-    @Nested
-    @DisplayName("adjustStock 검증")
-    class AdjustStockTests {
+		assertThat(inStockResponse.getStockQuantity()).isEqualTo(5);
+		assertThat(inStockResponse.getHasStock()).isTrue();
 
-        @Test
-        @DisplayName("수량이 null이면 예외가 발생한다")
-        void adjustStock_nullQuantity_shouldThrow() {
-            // Given: null 값 전달
-            // When / Then
-            assertThatThrownBy(() -> service.adjustStock(1L, null, true))
-                .isInstanceOf(BusinessException.class);
-        }
+		assertThat(outOfStockResponse.getStockQuantity()).isZero();
+		assertThat(outOfStockResponse.getHasStock()).isFalse();
+	}
 
-        @Test
-        @DisplayName("재고 엔티티가 존재하지 않으면 예외가 발생한다")
-        void adjustStock_inventoryNotFound_shouldThrow() {
-            // Given: repository가 빈 Optional 반환
-            given(inventoryRepository.findByProductOptionIdWithLock(anyLong())).willReturn(Optional.empty());
+	@Test
+	@DisplayName("브랜드 멤버가 아니면 재고 조회가 거부된다.")
+	void getProductOptionStocksWithNonMemberThrows() {
+		// given
+		Long productId = createProduct(
+			"멤버 아님 티셔츠",
+			List.of(optionRequest(BigDecimal.valueOf(10000), 5, List.of(sizeLId, colorBlackId)))
+		);
+		Long nonMemberUserId = 9999L;
 
-            // When / Then
-            assertThatThrownBy(() -> service.adjustStock(1L, 5, true))
-                .isInstanceOf(BusinessException.class);
-        }
+		// when // then
+		assertThatThrownBy(() -> sut.getProductOptionStocks(brandId, productId, nonMemberUserId))
+			.isInstanceOf(BusinessException.class)
+			.extracting("errorCode")
+			.isEqualTo(ErrorCode.NOT_BRAND_MEMBER);
+	}
 
-        @Test
-        @DisplayName("차감 시 재고 부족이면 BusinessException으로 래핑된다")
-        void adjustStock_decrease_insufficient() {
-            // Given: 재고 수량이 적은 Inventory 엔티티가 존재한다
-            Inventory inv = Inventory.builder().stockQuantity(new StockQuantity(1)).build();
-            setId(inv, "inventoryId", 99L);
-            given(inventoryRepository.findByProductOptionIdWithLock(eq(10L))).willReturn(Optional.of(inv));
+	@Test
+	@DisplayName("재고를 추가하면 수량이 증가한다.")
+	void addStockIncreasesQuantity() {
+		// given
+		Long productId = createProduct(
+			"재고 추가 티셔츠",
+			List.of(optionRequest(BigDecimal.valueOf(10000), 5, List.of(sizeLId, colorBlackId)))
+		);
+		Long productOptionId = findProductOptions(productId).get(0).getProductOptionId();
+		StockAdjustmentRequest request = StockAdjustmentRequest.builder()
+			.productOptionId(productOptionId)
+			.quantity(3)
+			.build();
 
-            // When / Then
-            assertThatThrownBy(() -> service.adjustStock(10L, 5, false))
-                .isInstanceOf(BusinessException.class);
-        }
+		// when
+		var response = sut.addStock(brandId, productId, request, userId);
 
-        @Test
-        @DisplayName("증가 시 재고가 늘어나고 저장된다")
-        void adjustStock_increase_success() {
-            // Given: 초기 재고가 2인 Inventory 엔티티가 존재한다
-            Inventory inv = Inventory.builder().stockQuantity(new StockQuantity(2)).build();
-            setId(inv, "inventoryId", 100L);
-            given(inventoryRepository.findByProductOptionIdWithLock(eq(20L))).willReturn(Optional.of(inv));
+		// then
+		assertThat(response.getStockQuantity()).isEqualTo(8);
+		assertThat(response.getHasStock()).isTrue();
+		assertThat(inventoryRepository.findByProductOptionId(productOptionId))
+			.get()
+			.extracting(inv -> inv.getStockQuantity().getValue())
+			.isEqualTo(8);
+	}
 
-            // When
-            Inventory updated = service.adjustStock(20L, 3, true);
+	@Test
+	@DisplayName("다른 상품의 옵션으로 재고를 조정하면 BusinessException이 발생한다.")
+	void adjustStockWithOptionNotBelongingToProductThrows() {
+		// given
+		Long productId = createProduct(
+			"상품 A",
+			List.of(optionRequest(BigDecimal.valueOf(10000), 5, List.of(sizeLId, colorBlackId)))
+		);
+		Long otherProductId = createProduct(
+			"상품 B",
+			List.of(optionRequest(BigDecimal.valueOf(12000), 3, List.of(sizeMId, colorBlackId)))
+		);
+		Long otherProductOptionId = findProductOptions(otherProductId).get(0).getProductOptionId();
 
-            // Then
-            assertThat(updated.getStockQuantity().getValue()).isEqualTo(5);
-            then(inventoryRepository).should().save(inv);
-        }
-    }
+		StockAdjustmentRequest request = StockAdjustmentRequest.builder()
+			.productOptionId(otherProductOptionId)
+			.quantity(1)
+			.build();
 
-    @Nested
-    @DisplayName("addStock / subtractStock 동작")
-    class ModifyStockTests {
+		// when // then
+		assertThatThrownBy(() -> sut.addStock(brandId, productId, request, userId))
+			.isInstanceOf(BusinessException.class)
+			.extracting("errorCode")
+			.isEqualTo(ErrorCode.PRODUCT_OPTION_NOT_FOUND);
 
-        @Test
-        @DisplayName("addStock 호출 시 재고가 추가되고 DTO가 반환된다")
-        void addStock_success() {
-            // Given: 브랜드, 상품, 옵션, 재고를 구성한다
-            Brand brand = Brand.create("b", "b", BigDecimal.ONE);
-            setId(brand, "brandId", 1L);
+		assertThatThrownBy(() -> sut.subtractStock(brandId, productId, request, userId))
+			.isInstanceOf(BusinessException.class)
+			.extracting("errorCode")
+			.isEqualTo(ErrorCode.PRODUCT_OPTION_NOT_FOUND);
+	}
 
-            Product product = Product.builder().brand(brand).productName("p").productInfo("i").productGenderType(ProductGenderType.ALL).brandName("b").categoryPath("c").isAvailable(true).build();
-            setId(product, "productId", 2L);
+	@Test
+	@DisplayName("다른 브랜드 상품의 재고를 조정하려 하면 예외가 발생한다.")
+	void adjustStockForOtherBrandThrows() {
+		// given
+		Long productId = createProduct(
+			"브랜드 불일치 티셔츠",
+			List.of(optionRequest(BigDecimal.valueOf(10000), 5, List.of(sizeLId, colorBlackId)))
+		);
+		Long productOptionId = findProductOptions(productId).get(0).getProductOptionId();
+		Brand otherBrand = saveBrandWithMember(userId);
+		StockAdjustmentRequest request = StockAdjustmentRequest.builder()
+			.productOptionId(productOptionId)
+			.quantity(1)
+			.build();
 
-            Inventory inv = Inventory.builder().stockQuantity(new StockQuantity(5)).build();
-            setId(inv, "inventoryId", 11L);
+		// when // then
+		assertThatThrownBy(() -> sut.addStock(otherBrand.getBrandId(), productId, request, userId))
+			.isInstanceOf(BusinessException.class)
+			.extracting("errorCode")
+			.isEqualTo(ErrorCode.PRODUCT_NOT_FOUND);
+	}
 
-            ProductOption po = ProductOption.create(product, new Money(1000), inv);
-            setId(po, "productOptionId", 33L);
+	@Test
+	@DisplayName("재고를 차감하면 수량이 감소한다.")
+	void subtractStockDecreasesQuantity() {
+		// given
+		Long productId = createProduct(
+			"재고 차감 티셔츠",
+			List.of(optionRequest(BigDecimal.valueOf(10000), 5, List.of(sizeLId, colorBlackId)))
+		);
+		Long productOptionId = findProductOptions(productId).get(0).getProductOptionId();
+		StockAdjustmentRequest request = StockAdjustmentRequest.builder()
+			.productOptionId(productOptionId)
+			.quantity(2)
+			.build();
 
-            given(brandMemberRepository.existsByBrand_BrandIdAndUserId(eq(1L), anyLong())).willReturn(true);
-            given(productOptionRepository.findByIdWithProductAndInventory(eq(33L))).willReturn(Optional.of(po));
-            given(inventoryRepository.findByProductOptionIdWithLock(eq(33L))).willReturn(Optional.of(inv));
+		// when
+		var response = sut.subtractStock(brandId, productId, request, userId);
 
-            StockAdjustmentRequest req = StockAdjustmentRequest.builder().productOptionId(33L).quantity(4).build();
+		// then
+		assertThat(response.getStockQuantity()).isEqualTo(3);
+		assertThat(response.getHasStock()).isTrue();
+	}
 
-            // When: addStock을 호출하면
-            ProductOptionStockResponse resp = service.addStock(1L, 2L, req, 999L);
+	@Test
+	@DisplayName("재고보다 많이 차감하면 BusinessException이 발생한다.")
+	void subtractStockWithInsufficientQuantityThrows() {
+		// given
+		Long productId = createProduct(
+			"재고 부족 티셔츠",
+			List.of(optionRequest(BigDecimal.valueOf(10000), 1, List.of(sizeLId, colorBlackId)))
+		);
+		Long productOptionId = findProductOptions(productId).get(0).getProductOptionId();
+		StockAdjustmentRequest request = StockAdjustmentRequest.builder()
+			.productOptionId(productOptionId)
+			.quantity(5)
+			.build();
 
-            // Then: DTO에 증가된 재고가 반영된다
-            assertThat(resp).isNotNull();
-            assertThat(resp.getStockQuantity()).isEqualTo(9);
-        }
+		// when // then
+		assertThatThrownBy(() -> sut.subtractStock(brandId, productId, request, userId))
+			.isInstanceOf(BusinessException.class)
+			.extracting("errorCode")
+			.isEqualTo(ErrorCode.INSUFFICIENT_STOCK);
+	}
 
-        @Test
-        @DisplayName("subtractStock 호출 시 정상 차감되고 DTO가 반환된다")
-        void subtractStock_success() {
-            // Given: 브랜드, 상품, 옵션, 재고를 구성한다
-            Brand brand = Brand.create("b", "b", BigDecimal.ONE);
-            setId(brand, "brandId", 1L);
+	@ParameterizedTest
+	@MethodSource("invalidQuantityProvider")
+	@DisplayName("유효하지 않은 수량으로 재고를 조정하려 하면 예외가 발생한다.")
+	void adjustStockWithInvalidQuantityThrows(Integer invalidQuantity, ErrorCode expectedErrorCode) {
+		// given
+		Long productId = createProduct(
+			"유효하지 않은 수량 티셔츠",
+			List.of(optionRequest(BigDecimal.valueOf(10000), 5, List.of(sizeLId, colorBlackId)))
+		);
+		Long productOptionId = findProductOptions(productId).get(0).getProductOptionId();
+		StockAdjustmentRequest request = StockAdjustmentRequest.builder()
+			.productOptionId(productOptionId)
+			.quantity(invalidQuantity)
+			.build();
 
-            Product product = Product.builder().brand(brand).productName("p").productInfo("i").productGenderType(ProductGenderType.ALL).brandName("b").categoryPath("c").isAvailable(true).build();
-            setId(product, "productId", 2L);
+		// when // then
+		assertThatThrownBy(() -> sut.addStock(brandId, productId, request, userId))
+			.isInstanceOf(BusinessException.class)
+			.extracting("errorCode")
+			.isEqualTo(expectedErrorCode);
+	}
 
-            Inventory inv = Inventory.builder().stockQuantity(new StockQuantity(10)).build();
-            setId(inv, "inventoryId", 12L);
+	static Stream<Arguments> invalidQuantityProvider() {
+		return Stream.of(
+			Arguments.of(null, ErrorCode.INVALID_INVENTORY_UPDATE_VALUE),
+			Arguments.of(0, ErrorCode.INVALID_INVENTORY_UPDATE_VALUE),
+			Arguments.of(-1, ErrorCode.INVALID_INVENTORY_UPDATE_VALUE)
+		);
+	}
 
-            ProductOption po = ProductOption.create(product, new Money(2000), inv);
-            setId(po, "productOptionId", 44L);
+	@Test
+	@DisplayName("상품이 null 일때 브랜드의 상품의 옵션을 로드하려 하면 예외가 발생한다.")
+	void loadProductOptionForBrandWithNullProductThrows() {
+		// given
+		Long nonExistentProductId = 9999L;
+		StockAdjustmentRequest request = StockAdjustmentRequest.builder()
+			.productOptionId(1L)
+			.quantity(1)
+			.build();
 
-            given(brandMemberRepository.existsByBrand_BrandIdAndUserId(eq(1L), anyLong())).willReturn(true);
-            given(productOptionRepository.findByIdWithProductAndInventory(eq(44L))).willReturn(Optional.of(po));
-            given(inventoryRepository.findByProductOptionIdWithLock(eq(44L))).willReturn(Optional.of(inv));
+		// when // then
+		assertThatThrownBy(() -> sut.addStock(brandId, nonExistentProductId, request, userId))
+			.isInstanceOf(BusinessException.class)
+			.extracting("errorCode")
+			.isEqualTo(ErrorCode.PRODUCT_NOT_FOUND);
+	}
 
-            StockAdjustmentRequest req = StockAdjustmentRequest.builder().productOptionId(44L).quantity(3).build();
+	// ==== helper methods ==== //
+	private Long createProduct(String name, List<ProductCreateRequest.OptionCreateRequest> options) {
+		ProductCreateRequest request = ProductCreateRequest.builder()
+			.productName(name)
+			.productInfo("상품 정보")
+			.productGenderType(ProductGenderType.ALL)
+			.categoryPath(categoryPath)
+			.isAvailable(true)
+			.images(List.of(ProductCreateRequest.ImageCreateRequest.builder()
+				.imageUrl("http://example.com/thumb.jpg")
+				.isThumbnail(true)
+				.build()))
+			.options(options)
+			.build();
 
-            // When: subtractStock을 호출하면
-            ProductOptionStockResponse resp = service.subtractStock(1L, 2L, req, 999L);
+		return productCommandService.createProduct(request, brandId, userId);
+	}
 
-            // Then: DTO에 차감된 재고가 반영된다
-            assertThat(resp.getStockQuantity()).isEqualTo(7);
-        }
+	private ProductCreateRequest.OptionCreateRequest optionRequest(BigDecimal price, int stock, List<Long> optionValueIds) {
+		return ProductCreateRequest.OptionCreateRequest.builder()
+			.productPrice(price)
+			.stockQuantity(stock)
+			.optionValueIds(optionValueIds)
+			.build();
+	}
 
-        @Test
-        @DisplayName("subtractStock에서 재고 부족 시 BusinessException을 던진다")
-        void subtractStock_insufficient_shouldThrow() {
-            // Given: 브랜드, 상품, 옵션, 재고를 구성한다 (재고 부족)
-            Brand brand = Brand.create("b", "b", BigDecimal.ONE);
-            setId(brand, "brandId", 1L);
+	private List<ProductOption> findProductOptions(Long productId) {
+		Product product = productRepository.findById(productId).orElseThrow();
+		return productOptionRepository.findAllByProduct(product);
+	}
 
-            Product product = Product.builder().brand(brand).productName("p").productInfo("i").productGenderType(ProductGenderType.ALL).brandName("b").categoryPath("c").isAvailable(true).build();
-            setId(product, "productId", 2L);
+	private Brand saveBrandWithMember(Long userId) {
+		Brand brand = Brand.create("브랜드", "BRAND", BigDecimal.ZERO);
+		brand.addMember(BrandMember.create(userId));
+		return brandRepository.save(brand);
+	}
 
-            Inventory inv = Inventory.builder().stockQuantity(new StockQuantity(1)).build();
-            setId(inv, "inventoryId", 13L);
+	private Category saveCategoryPath(String parentName, String childName) {
+		Category parent = categoryRepository.save(Category.create(parentName, null, null));
+		return categoryRepository.save(Category.create(childName, parent, null));
+	}
 
-            ProductOption po = ProductOption.create(product, new Money(2000), inv);
-            setId(po, "productOptionId", 55L);
-
-            given(brandMemberRepository.existsByBrand_BrandIdAndUserId(eq(1L), anyLong())).willReturn(true);
-            given(productOptionRepository.findByIdWithProductAndInventory(eq(55L))).willReturn(Optional.of(po));
-            given(inventoryRepository.findByProductOptionIdWithLock(eq(55L))).willReturn(Optional.of(inv));
-
-            StockAdjustmentRequest req = StockAdjustmentRequest.builder().productOptionId(55L).quantity(5).build();
-
-            // When / Then: 차감 시 재고 부족으로 BusinessException 발생
-            assertThatThrownBy(() -> service.subtractStock(1L, 2L, req, 999L))
-                .isInstanceOf(BusinessException.class);
-        }
-    }
-
-    @Nested
-    @DisplayName("상품 옵션 재고 조회 및 판매 상태 변경")
-    class QueryAndAvailabilityTests {
-
-        @Test
-        @DisplayName("getProductOptionStocks는 매핑된 재고 목록을 반환한다")
-        void getProductOptionStocks_success() {
-            // Given: 브랜드, 상품과 옵션·재고를 구성한다
-            Brand brand = Brand.create("b", "b", BigDecimal.ONE);
-            setId(brand, "brandId", 5L);
-
-            Product product = Product.builder().brand(brand).productName("p").productInfo("i").productGenderType(ProductGenderType.ALL).brandName("b").categoryPath("c").isAvailable(true).build();
-            setId(product, "productId", 6L);
-
-            Inventory inv = Inventory.builder().stockQuantity(new StockQuantity(2)).build();
-            ProductOption po = ProductOption.create(product, new Money(1000), inv);
-            setId(po, "productOptionId", 77L);
-            product.addProductOption(po);
-
-            given(brandMemberRepository.existsByBrand_BrandIdAndUserId(eq(5L), anyLong())).willReturn(true);
-            given(productRepository.findDetailByIdForManager(eq(6L), eq(5L))).willReturn(Optional.of(product));
-
-            // When: getProductOptionStocks 호출
-            var list = service.getProductOptionStocks(5L, 6L, 999L);
-
-            // Then: 매핑된 재고 목록이 반환된다
-            assertThat(list).hasSize(1);
-            assertThat(list.get(0).getProductOptionId()).isEqualTo(77L);
-        }
-
-    }
-
+	private OptionValue saveOptionValue(String optionName, String optionValue) {
+		return optionValueRepository.save(OptionValue.create(optionName, optionValue));
+	}
 }

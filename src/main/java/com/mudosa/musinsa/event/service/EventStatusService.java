@@ -69,12 +69,17 @@ public class EventStatusService {
                     }
                     case OPEN -> {
                         // DRAFT 또는 PLANNED → OPEN
-                        if (currentStatus == EventStatus.DRAFT || currentStatus == EventStatus.PLANNED) {
+                        // 공개 이벤트만 자동 OPEN
+                        if ((currentStatus == EventStatus.DRAFT || currentStatus == EventStatus.PLANNED)
+                            && event.getIsPublic()) {
                             event.open();
                             toOpenCount++;
                             updatedCount++;
                             log.info("이벤트 상태 변경: {} → OPEN - eventId: {}, title: {}, startedAt: {}, endedAt: {}",
-                                    currentStatus, event.getId(), event.getTitle(), event.getStartedAt(), event.getEndedAt());
+                                    currentStatus, event.getId(), event.getTitle(), event.getIsPublic(), event.getStartedAt(), event.getEndedAt());
+                        } else if(!event.getIsPublic()){
+                            log.debug("비공개 이벤트는 자동 OPEN하지 않음 - eventId: {}, title: {}, isPublic: false ",
+                                    event.getId(), event.getTitle());
                         }
                     }
                     case ENDED -> {
@@ -107,81 +112,22 @@ public class EventStatusService {
     }
 
     /**
-     * PLANNED/DRAFT 상태의 이벤트 중 시작 시간이 도래한 이벤트를 OPEN으로 변경
-     */
-    private int updatePlannedToOpen(LocalDateTime now) {
-        // PLANNED 상태이면서 시작 시간이 지난 이벤트 조회
-        List<Event> plannedEvents = eventRepository.findAllByStatusAndStartedAtBefore(
-                EventStatus.PLANNED, now
-        );
-
-        // DRAFT 상태이면서 시작 시간이 지난 이벤트도 조회
-        List<Event> draftEvents = eventRepository.findAllByStatusAndStartedAtBefore(
-                EventStatus.DRAFT, now
-        );
-
-        int count = 0;
-
-        // PLANNED → OPEN
-        for (Event event : plannedEvents) {
-            if (event.getIsPublic()) {  // 공개 이벤트만 자동 OPEN
-                event.open();
-                count++;
-                log.info("이벤트 자동 시작 - eventId: {}, title: {}", event.getId(), event.getTitle());
-            }
-        }
-
-        // DRAFT → OPEN (선택적, 필요한 경우만)
-        for (Event event : draftEvents) {
-            // DRAFT 상태는 수동으로만 열도록 하려면 이 부분 제거
-            // 자동으로 열려면 아래 주석 해제
-            /*
-            if (event.getIsPublic() && shouldAutoOpen(event)) {
-                event.open();
-                count++;
-                log.info("이벤트 자동 시작 (DRAFT→OPEN) - eventId: {}, title: {}", event.getId(), event.getTitle());
-            }
-            */
-        }
-
-        return count;
-    }
-
-    /**
-     * OPEN 상태의 이벤트 중 종료 시간이 지난 이벤트를 ENDED로 변경
-     */
-    private int updateOpenToEnded(LocalDateTime now) {
-        // OPEN 상태이면서 종료 시간이 지난 이벤트 조회
-        List<Event> openEvents = eventRepository.findAllByStatusAndEndedAtBefore(
-                EventStatus.OPEN, now
-        );
-
-        int count = 0;
-
-        for (Event event : openEvents) {
-            event.end();
-            count++;
-            log.info("이벤트 자동 종료 - eventId: {}, title: {}", event.getId(), event.getTitle());
-        }
-
-        return count;
-    }
-
-    /**
      * 수동으로 특정 이벤트의 상태를 업데이트 (즉시 실행)
      *
      * @param eventId 업데이트할 이벤트 ID
      */
+
     @Transactional
     public void updateEventStatus(Long eventId) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new IllegalArgumentException("이벤트를 찾을 수 없습니다: " + eventId));
 
         LocalDateTime now = LocalDateTime.now();
+        EventStatus currentStatus = event.getStatus();
         EventStatus calculatedStatus = EventStatus.calculateStatus(event, now);
 
         // 계산된 상태와 현재 DB 상태가 다르면 업데이트
-        if (event.getStatus() != calculatedStatus) {
+        if (currentStatus != calculatedStatus) {
             switch (calculatedStatus) {
                 case OPEN -> event.open();
                 case ENDED -> event.end();
@@ -219,7 +165,7 @@ public class EventStatusService {
                         // PLANNED로 되돌리지 않음 (이미 OPEN이면 유지)
                     }
                     case OPEN -> {
-                        if (currentStatus != EventStatus.PAUSED) {  // PAUSED는 수동 관리
+                        if (currentStatus != EventStatus.PAUSED && event.getIsPublic()) {  // PAUSED는 수동 관리
                             event.open();
                             updatedCount++;
                         }

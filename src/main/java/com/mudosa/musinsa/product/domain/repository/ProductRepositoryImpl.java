@@ -16,7 +16,6 @@ import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Order;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
-import jakarta.persistence.criteria.Subquery;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -97,15 +96,8 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
 
         // 가격 정렬이 있는 경우 가장 먼저 적용
         if (priceSort != null) {
-            // 최저가 계산을 위한 서브쿼리
-            Subquery<java.math.BigDecimal> priceSubquery = cq.subquery(java.math.BigDecimal.class);
-            Root<Product> subProduct = priceSubquery.correlate(product);
-            jakarta.persistence.criteria.Join<Product, ?> options = subProduct.join("productOptions");
-            
-            priceSubquery.select(cb.min(options.get("productPrice").get("amount")))
-                .where(cb.equal(subProduct.get("productId"), product.get("productId")));
-
-            Expression<java.math.BigDecimal> lowestPriceExpr = priceSubquery.getSelection();
+            // 역정규화된 대표 가격 컬럼을 그대로 사용해 정렬
+            Expression<java.math.BigDecimal> lowestPriceExpr = product.get("defaultPrice");
             
             if (priceSort == ProductSearchCondition.PriceSort.LOWEST) {
                 orders.add(cb.asc(lowestPriceExpr));

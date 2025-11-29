@@ -18,15 +18,19 @@ import com.mudosa.musinsa.product.domain.model.Product;
 import com.mudosa.musinsa.product.domain.model.ProductOption;
 import com.mudosa.musinsa.product.domain.model.ProductOptionValue;
 import com.mudosa.musinsa.brand.domain.repository.BrandMemberRepository;
+import com.mudosa.musinsa.brand.domain.repository.BrandRepository;
 import com.mudosa.musinsa.product.domain.repository.OptionValueRepository;
+import com.mudosa.musinsa.product.domain.repository.CategoryRepository;
 import com.mudosa.musinsa.product.domain.repository.ImageRepository;
 import com.mudosa.musinsa.product.domain.repository.ProductRepository;
 import com.mudosa.musinsa.product.domain.repository.ProductOptionRepository;
 import com.mudosa.musinsa.product.domain.vo.StockQuantity;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -46,6 +50,8 @@ public class ProductCommandService {
 	
 	private final ProductRepository productRepository;
 	private final OptionValueRepository optionValueRepository;
+    private final BrandRepository brandRepository;
+    private final CategoryRepository categoryRepository;
 	private final BrandMemberRepository brandMemberRepository;
 	private final ProductOptionRepository productOptionRepository;
 	private final ImageRepository imageRepository;
@@ -55,26 +61,42 @@ public class ProductCommandService {
 	 */
 	@Transactional
 	public Long createProduct(ProductCreateRequest request,
-						  Brand brand,
-						  Category category,
+						  Long brandId,
 						  Long currentUserId) {
-		// 1. 브랜드 멤버 및 요청 검증
-		validateBrandMember(brand.getBrandId(), currentUserId);
 
-		// 2. 성별, 이미지, 옵션 정보 로드 (이미지와 옵션은 dto 에서 검증)
+		// 1. 브랜드 조회 및 검증
+		Brand brand = brandRepository.findById(brandId)
+            .orElseThrow(() -> new BusinessException(ErrorCode.BRAND_NOT_MATCHED));
+		
+		// 2. 브랜드 멤버 및 요청 검증
+		validateBrandMember(brand.getBrandId(), currentUserId);
+	
+		// 3. 카테고리 조회 및 검증
+		Category category = categoryRepository.findByPath(request.getCategoryPath());
+        if (category == null) {
+            throw new BusinessException(ErrorCode.PRODUCT_CATEGORY_REQUIRED);
+        }
+
+		// 4. 옵션 값 요청 목록 로드
 		List<ProductCreateRequest.OptionCreateRequest> optionRequests = request.getOptions();
 
-		
-		// 3. 옵션 값 ID 목록 로드
+		// 5. 옵션 값 ID 목록 로드
 		Set<Long> optionValueIds = optionRequests.stream()
 			.filter(Objects::nonNull)
 			.flatMap(spec -> spec.getOptionValueIds().stream())
 			.collect(Collectors.toSet());
 		
-		// 4. 옵션 값 엔티티 매핑
+		// 6. 옵션 값 엔티티 매핑
 		Map<Long, OptionValue> optionValueMap = loadOptionValuesByIds(new ArrayList<>(optionValueIds));
+
+		// 7. 옵션 목록에서 대표 가격(default_price)을 결정한다. 우선순위: 최저 옵션가
+		BigDecimal defaultPrice = optionRequests.stream()
+			.map(ProductCreateRequest.OptionCreateRequest::getProductPrice)
+			.filter(Objects::nonNull)
+			.min(BigDecimal::compareTo)
+			.orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_PRICE_REQUIRED));
 		
-		// 5. 상품 및 하위 엔티티 생성
+		// 8. 상품 및 하위 엔티티 생성
 		Product product = Product.create(
 			brand,
 			request.getProductName(),
@@ -83,22 +105,23 @@ public class ProductCommandService {
 			brand.getNameKo(),
 			category.buildPath(),
 			request.getIsAvailable(),
+			defaultPrice,
 			null,
 			null
 		);
 
-		// 6. 이미지 및 옵션 추가
+		// 9. 이미지 및 옵션 추가
 		request.getImages().forEach(image -> {
 			Image img = Image.create(product, image.getImageUrl(), image.getIsThumbnail());
 			product.addImage(img);
 		});
 
-		// 7. 옵션 생성 및 추가
+		// 10. 옵션 생성 및 추가
 		Set<OptionCombination> optionCombinations = new HashSet<>();
 		optionRequests.forEach(option -> {
 			OptionCombination combination = resolveCombination(option.getOptionValueIds(), optionValueMap);
 			if (!optionCombinations.add(combination)) {
-				throw new BusinessException(ErrorCode.DUPLICATE_PRODUCT_OPTION, "동일한 사이즈/색상 조합의 옵션이 이미 존재합니다.");
+				throw new BusinessException(ErrorCode.DUPLICATE_PRODUCT_OPTION_COMBINATION, "동일한 사이즈/색상 조합의 옵션이 이미 존재합니다.");
 			}
 			Money price = option.getProductPrice() != null ? new Money(option.getProductPrice()) : null;
 			ProductOption productOption = createProductOption(
@@ -111,7 +134,7 @@ public class ProductCommandService {
 			product.addProductOption(productOption);
 		});
 
-		// 8. 상품 저장 및 ID 반환
+		// 11. 상품 저장 및 ID 반환
 		Product saved = productRepository.save(product);
 		return saved.getProductId();
 	}
@@ -132,7 +155,7 @@ public class ProductCommandService {
 
 		// 3. 수정 가능한 필드가 없으면 예외 처리
 		if (!request.hasUpdatableField()) {
-			throw new BusinessException(ErrorCode.VALIDATION_ERROR, "상품 이름, 설명, 판매가능여부, 이미지만 수정이 가능합니다.");
+			throw new BusinessException(ErrorCode.PRODUCT_NOTHING_TO_UPDATE);
 		}
 
 		// 4. 상품 정보 갱신 검증
@@ -165,7 +188,7 @@ public class ProductCommandService {
 
 		// 7. 변경된 항목이 없으면 예외 처리
 		if (!changed) {
-			throw new BusinessException(ErrorCode.VALIDATION_ERROR, "변경된 항목이 없습니다.");
+			throw new BusinessException(ErrorCode.PRODUCT_NO_CHANGES_DETECTED);
 		}
 
 		// 8. 결과 상세 정보 반환
@@ -184,26 +207,21 @@ public class ProductCommandService {
 		validateBrandMember(brandId, currentUserId);
 		
 		// 2. 상품 조회 및 브랜드 소유권 검증 (옵션 추가는 동시성 제어 필요)
-		Product product = findProductForBrandOrThrow(productId, brandId, true);	
-		
-		// 3. 옵션 생성 및 추가
-		if (request == null) {
-			throw new BusinessException(ErrorCode.PRODUCT_OPTION_REQUIRED, "옵션 정보가 필요합니다.");
-		}
+		Product product = findProductForBrandOrThrow(productId, brandId, true);
 
-		// 4. 옵션 값 엔티티 매핑
+		// 3. 옵션 값 엔티티 매핑
 		Map<Long, OptionValue> optionValueMap = loadOptionValuesByIds(request.getOptionValueIds());
 
-		// 5. 동일 옵션 조합 중복 검증
+		// 4. 동일 옵션 조합 중복 검증
 		OptionCombination newCombination = resolveCombination(request.getOptionValueIds(), optionValueMap);
 		if (productOptionRepository.existsByProductIdAndOptionValueIds(
 			product.getProductId(),
 			newCombination.getSizeOptionValueId(),
 			newCombination.getColorOptionValueId())) {
-			throw new BusinessException(ErrorCode.DUPLICATE_PRODUCT_OPTION, "동일한 사이즈/색상 조합의 옵션이 이미 존재합니다.");
+			throw new BusinessException(ErrorCode.DUPLICATE_PRODUCT_OPTION_COMBINATION, "동일한 사이즈/색상 조합의 옵션이 이미 존재합니다.");
 		}
 
-		// 6. 옵션 생성
+		// 5. 옵션 생성
 		Money optionPrice = request.getProductPrice() != null ? new Money(request.getProductPrice()) : null;
 		ProductOption productOption = createProductOption(
 			product,
@@ -213,8 +231,11 @@ public class ProductCommandService {
 			optionValueMap
 		);
 		
-		// 6. 상품에 옵션 추가 및 저장
+		// 6. 상품에 옵션 추가 및 대표 가격 갱신
 		product.addProductOption(productOption);
+		if (request.getProductPrice() != null) {
+			product.applyLowerDefaultPrice(request.getProductPrice());
+		}
 		return ProductCommandMapper.toOptionDetail(productOption);
 	}
 	
@@ -254,9 +275,6 @@ public class ProductCommandService {
 
 	// 브랜드 멤버 권한을 검증한다.
 	private void validateBrandMember(Long brandId, Long userId) {
-		if (brandId == null) {
-			throw new BusinessException(ErrorCode.BRAND_ID_REQUIRED);
-		}
 		if (!brandMemberRepository.existsByBrand_BrandIdAndUserId(brandId, userId)) {
 			throw new BusinessException(ErrorCode.NOT_BRAND_MEMBER);
 		}
@@ -269,19 +287,11 @@ public class ProductCommandService {
 
 	// 락 옵션을 포함한 브랜드 소유의 상품 조회 및 소유권 검증
 	private Product findProductForBrandOrThrow(Long productId, Long brandId, boolean lock) {
-		if (brandId == null) {
-			throw new BusinessException(ErrorCode.BRAND_ID_REQUIRED);
-		}
 		Product product = (lock
 			? productRepository.findDetailByIdForManagerWithLock(productId, brandId)
 			: productRepository.findDetailByIdForManager(productId, brandId))
 			.orElseThrow(() -> new BusinessException(
-				ErrorCode.PRODUCT_NOT_FOUND, "해당 brandId :" + brandId+ " 에 속한 상품을 찾을 수 없습니다. productId=" + productId));
-		if (product.getBrand() == null
-			|| product.getBrand().getBrandId() == null
-			|| !Objects.equals(product.getBrand().getBrandId(), brandId)) {
-			throw new BusinessException(ErrorCode.NOT_BRAND_PRODUCT);
-		}
+				ErrorCode.PRODUCT_NOT_FOUND));
 		return product;
 	}
 
@@ -337,20 +347,23 @@ public class ProductCommandService {
 
 	// 옵션 값 ID 목록으로부터 옵션 조합을 해석한다.
 	private OptionCombination resolveCombination(List<Long> optionValueIds, Map<Long, OptionValue> optionValueMap) {
-		if (optionValueIds == null || optionValueIds.size() != OptionCombination.REQUIRED_OPTION_COUNT) {
+		if (optionValueIds == null) {
 			throw new BusinessException(ErrorCode.PRODUCT_OPTION_REQUIRED_SIZE_AND_VALUE);
+		}
+		if (optionValueIds.size() < OptionCombination.REQUIRED_OPTION_COUNT) {
+			throw new BusinessException(ErrorCode.PRODUCT_OPTION_REQUIRED_SIZE_AND_VALUE);
+		}
+		if (optionValueIds.size() > OptionCombination.REQUIRED_OPTION_COUNT) {
+			throw new BusinessException(ErrorCode.PRODUCT_OPTION_REQUIRED_ONE_SIZE_AND_VALUE);
 		}
 		Long sizeId = null;
 		Long colorId = null;
 		for (Long optionValueId : optionValueIds) {
 			OptionValue optionValue = optionValueMap.get(optionValueId);
-			if (optionValue == null) {
-				throw new BusinessException(ErrorCode.INVALID_PRODUCT_OPTION_VALUE);
-			}
 			String optionName = normalizeOptionName(optionValue.getOptionName());
 			if (OptionCombination.SIZE_OPTION_NAME.equals(optionName)) {
 				if (sizeId != null) {
-					throw new BusinessException(ErrorCode.PRODUCT_OPTION_REQUIRED_SIZE_AND_VALUE);
+					throw new BusinessException(ErrorCode.PRODUCT_OPTION_REQUIRED_ONE_SIZE_AND_VALUE);
 				}
 				sizeId = optionValue.getOptionValueId();
 				continue;

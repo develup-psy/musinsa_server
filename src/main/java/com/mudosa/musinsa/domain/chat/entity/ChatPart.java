@@ -48,10 +48,10 @@ public class ChatPart {
 
   public static ChatPart create(ChatRoom chatRoom, User user) {
     return ChatPart.builder()
-        .chatRoom(chatRoom)
-        .user(user)
-        .role(ChatPartRole.USER)
-        .build();
+            .chatRoom(chatRoom)
+            .user(user)
+            .role(ChatPartRole.USER)
+            .build();
   }
 
 }

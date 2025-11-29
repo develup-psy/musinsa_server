@@ -51,14 +51,17 @@ public class Event extends BaseEntity {
     // DDL: status ENUM('DRAFT','PLANNED','OPEN','PAUSED','ENDED','CANCELLED') NOT NULL DEFAULT 'DRAFT'
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
+    @Builder.Default
     private EventStatus status = EventStatus.DRAFT;
 
     // DDL: is_public BOOLEAN NOT NULL DEFAULT TRUE
     @Column(name = "is_public", nullable = false)
+    @Builder.Default
     private Boolean isPublic = true;
 
     // DDL: limit_per_user INT NOT NULL DEFAULT 1
     @Column(name = "limit_per_user", nullable = false)
+    @Builder.Default
     private Integer limitPerUser = 1;
 
     // DDL: started_at / ended_at NOT NULL
@@ -71,39 +74,17 @@ public class Event extends BaseEntity {
 
     // 같은 애그리거트 내부 연관(DDL 외부에 별도 테이블 필요)
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<EventOption> eventOptions = new ArrayList<>();
 
     @org.hibernate.annotations.BatchSize(size = 100)
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<EventImage> eventImages = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "coupon_id")
     private Coupon coupon;
-
-    /** 팩토리 메서드 */
-    public static Event create(
-            String title,
-            String description,
-            EventType eventType,
-            int limitPerUser,
-            boolean isPublic,
-            LocalDateTime startedAt,
-            LocalDateTime endedAt,
-            Coupon coupon
-    ) {
-        Event e = new Event();
-        e.title = title;
-        e.description = description;
-        e.eventType = eventType;
-        e.status = EventStatus.DRAFT; // DDL default와 일치
-        e.isPublic = isPublic;
-        e.limitPerUser = limitPerUser;
-        e.startedAt = startedAt;
-        e.endedAt = endedAt;
-        e.coupon = coupon;
-        return e;
-    }
 
     public void addEventOption(EventOption option) {
         this.eventOptions.add(option);

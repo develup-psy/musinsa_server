@@ -15,12 +15,12 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MemberCoupon extends BaseEntity {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "member_coupon_id")
     private Long id;
-    
+
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
@@ -31,13 +31,13 @@ public class MemberCoupon extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "coupon_status", nullable = false)
     private CouponStatus couponStatus = CouponStatus.AVAILABLE;
-    
+
     @Column(name = "used_order_id")
     private Long usedOrderId;
-    
+
     @Column(name = "used_at")
     private LocalDateTime usedAt;
-    
+
     @Column(name = "expired_at")
     private LocalDateTime expiredAt;
 
@@ -47,35 +47,27 @@ public class MemberCoupon extends BaseEntity {
         memberCoupon.userId = userId;
         memberCoupon.coupon = coupon;
         memberCoupon.couponStatus = CouponStatus.AVAILABLE;
-        // ✅ 쿠폰 종료일 + 30일을 만료일로 설정 (버그 수정)
         memberCoupon.expiredAt = coupon.getEndDate().plusDays(30);
         return memberCoupon;
     }
 
     public boolean isUsuable() {
-        // 1. 상태 검증
         if (this.couponStatus != CouponStatus.AVAILABLE) {
-           return false;
+            return false;
         }
-
-        // 2. 만료일 검증
         if (isExpired()) {
-           return false;
+            return false;
         }
-
         return true;
     }
 
     public void validateUsable() {
-        // 1. 상태 검증
         if (this.couponStatus != CouponStatus.AVAILABLE) {
             throw new BusinessException(
                     ErrorCode.COUPON_APPLIED_FALIED,
                     "이미 사용되었거나 만료된 쿠폰입니다"
             );
         }
-
-        // 2. 만료일 검증
         if (isExpired()) {
             throw new BusinessException(
                     ErrorCode.COUPON_EXPIRED,
@@ -86,12 +78,10 @@ public class MemberCoupon extends BaseEntity {
 
     public void use(Long orderId) {
         validateUsable();
-        
         this.couponStatus = CouponStatus.USED;
         this.usedOrderId = orderId;
         this.usedAt = LocalDateTime.now();
     }
-
 
     public boolean isExpired() {
         return this.expiredAt != null && LocalDateTime.now().isAfter(this.expiredAt);
@@ -104,11 +94,8 @@ public class MemberCoupon extends BaseEntity {
                     "사용되지 않은 쿠폰은 롤백할 수 없습니다"
             );
         }
-
-        // 상태 복구
         this.couponStatus = CouponStatus.AVAILABLE;
         this.usedAt = null;
         this.usedOrderId = null;
     }
 }
-

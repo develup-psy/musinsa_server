@@ -3,6 +3,7 @@ package com.mudosa.musinsa.event.presentation.controller;
 import com.mudosa.musinsa.event.model.Event;
 
 import com.mudosa.musinsa.event.presentation.dto.req.EventCouponIssueReqDto;
+import com.mudosa.musinsa.event.presentation.dto.res.EventCouponInfoResDto;
 import com.mudosa.musinsa.event.presentation.dto.res.EventCouponIssueResDto;
 import com.mudosa.musinsa.event.presentation.dto.res.EventListResDto;
 import com.mudosa.musinsa.event.service.EventCouponService;
@@ -57,6 +58,12 @@ public class EventController {
     * 슬롯/상태 검증 → (eventId,couponId) 재고 차감 → 발급이력 저장 → member_coupon 생성
     * 멱등성 보장 ? 이미 발급받은 경우 200으로 기존 결과 반환 or 409로 충돌
     */
+
+    @GetMapping("/{eventId}/coupons")
+    public ResponseEntity<EventCouponInfoResDto> getEventCoupon(@PathVariable Long eventId) {
+        EventCouponService.EventCouponInfoResult result = eventCouponService.getEventCoupon(eventId);
+        return ResponseEntity.ok(EventCouponInfoResDto.from(result));
+    }
 
     @PostMapping("/{eventId}/coupons/issue")
     public ResponseEntity<EventCouponIssueResDto> issueCoupon(

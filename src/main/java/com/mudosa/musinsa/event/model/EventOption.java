@@ -4,6 +4,8 @@ import com.mudosa.musinsa.common.domain.model.BaseEntity;
 import com.mudosa.musinsa.product.domain.model.ProductOption;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -25,6 +27,8 @@ import java.math.BigDecimal;
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Builder
 public class EventOption extends BaseEntity {
 
     @Id
@@ -51,20 +55,8 @@ public class EventOption extends BaseEntity {
 
     /** DDL: INT NOT NULL DEFAULT 0 */
     @Column(name = "event_stock", nullable = false)
+    @Builder.Default
     private Integer eventStock = 0;
-
-    /** 생성 팩토리 */
-    public static EventOption create(Event event,
-                                     ProductOption productOption,
-                                     BigDecimal eventPrice,
-                                     Integer eventStock) {
-        EventOption eo = new EventOption();
-        eo.event = event;
-        eo.productOption = productOption;
-        eo.eventPrice = eventPrice;       // null 허용(일반 가격 의미)
-        eo.eventStock = (eventStock != null ? eventStock : 0);
-        return eo;
-    }
 
     /** Event 편의 메서드에서 호출 (Event.addEventOption) */
     void assignEvent(Event event) {

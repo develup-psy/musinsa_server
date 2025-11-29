@@ -10,6 +10,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 // 상품 애그리거트 루트 엔티티로 연관된 하위 요소를 함께 관리한다.
 @Entity
 @Getter
@@ -43,6 +45,9 @@ public class Product extends BaseEntity {
     @Column(name = "is_available", nullable = false)
     private Boolean isAvailable;
 
+    @Column(name = "default_price", nullable = false, precision = 10, scale = 2)
+    private BigDecimal defaultPrice;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "product_gender_type", nullable = false)
     private ProductGenderType productGenderType;
@@ -63,6 +68,7 @@ public class Product extends BaseEntity {
                                  String brandName,
                                  String categoryPath,
                                  Boolean isAvailable,
+                                 BigDecimal defaultPrice,
                                  java.util.List<Image> images,
                                  java.util.List<ProductOption> productOptions) {
         if (productName == null || productName.trim().isEmpty()) {
@@ -76,14 +82,15 @@ public class Product extends BaseEntity {
         }
 
         return new Product(brand, productName, productInfo, productGenderType, brandName, categoryPath,
-                isAvailable, images, productOptions);
+                isAvailable, images, productOptions, defaultPrice);
     }
  
     @Builder
     private Product(Brand brand, String productName, String productInfo,
                    ProductGenderType productGenderType, String brandName, String categoryPath, Boolean isAvailable,
                    java.util.List<Image> images,
-                   java.util.List<ProductOption> productOptions) {
+                   java.util.List<ProductOption> productOptions,
+                   BigDecimal defaultPrice) {
 
         this.brand = brand;
         this.productName = productName;
@@ -92,6 +99,7 @@ public class Product extends BaseEntity {
         this.brandName = brandName;
         this.categoryPath = categoryPath;
         this.isAvailable = isAvailable != null ? isAvailable : true;
+        this.defaultPrice = defaultPrice != null ? defaultPrice : BigDecimal.ZERO;
 
         if (images != null) {
             images.forEach(this::addImage);
@@ -112,6 +120,16 @@ public class Product extends BaseEntity {
     public void addProductOption(ProductOption productOption) {
         productOption.setProduct(this);
         this.productOptions.add(productOption);
+    }
+
+    // 새로운 옵션 가격이 더 낮으면 대표 가격을 갱신한다.
+    public void applyLowerDefaultPrice(BigDecimal candidatePrice) {
+        if (candidatePrice == null) {
+            return;
+        }
+        if (this.defaultPrice == null || candidatePrice.compareTo(this.defaultPrice) < 0) {
+            this.defaultPrice = candidatePrice;
+        }
     }
 
     // 상품 판매 가능 여부를 직접 전환한다.

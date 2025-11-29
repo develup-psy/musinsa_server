@@ -3,6 +3,8 @@ package com.mudosa.musinsa.coupon.domain.model;
 import com.mudosa.musinsa.common.domain.model.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -10,6 +12,8 @@ import lombok.NoArgsConstructor;
 @Table(name = "coupon_product")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Builder
 public class CouponProduct extends BaseEntity {
     
     @Id
@@ -24,11 +28,6 @@ public class CouponProduct extends BaseEntity {
     @Column(name = "product_id", nullable = false)
     private Long productId;
 
-    public static CouponProduct create(Long productId) {
-        CouponProduct couponProduct = new CouponProduct();
-        couponProduct.productId = productId;
-        return couponProduct;
-    }
     void assignCoupon(Coupon coupon) {
         this.coupon = coupon;
     }

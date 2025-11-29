@@ -69,9 +69,9 @@ public class FcmService {
 
         MulticastMessage message = MulticastMessage.builder()
                 .setNotification(Notification.builder()
-                        .setTitle(title)
-                        .setBody(body)
-                        .build())
+                .setTitle(title)
+                .setBody(body)
+                .build())
                 .addAllTokens(registrationTokens)
                 .build();
 

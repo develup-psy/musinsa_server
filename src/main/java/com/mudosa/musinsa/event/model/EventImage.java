@@ -3,6 +3,8 @@ package com.mudosa.musinsa.event.model;
 import com.mudosa.musinsa.common.domain.model.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -20,6 +22,8 @@ import lombok.NoArgsConstructor;
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Builder
 public class EventImage extends BaseEntity {
 
     @Id
@@ -35,15 +39,8 @@ public class EventImage extends BaseEntity {
     private String imageUrl;
 
     @Column(name = "is_thumbnail", nullable = false)
+    @Builder.Default
     private Boolean isThumbnail = false;  // 썸네일 여부를 나타내는 필드
-
-
-    public static EventImage create(String imageUrl, Boolean isThumbnail) {
-        EventImage image = new EventImage();
-        image.imageUrl = imageUrl;
-        image.isThumbnail = isThumbnail;
-        return image;
-    }
 
     /** Event 할당 (Event 애그리거트에서만 호출) */
     public void assignEvent(Event event) {

@@ -110,37 +110,37 @@ class EventCouponServiceTest extends ServiceConfig {
         // Coupon 생성
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
-        Coupon coupon = Coupon.create(
-                "이벤트 쿠폰",
-                DiscountType.AMOUNT,
-                new BigDecimal("10000"),
-                startDate,
-                endDate,
-                100
-        );
+        Coupon coupon = Coupon.builder()
+                .couponName("이벤트 쿠폰")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(new BigDecimal("10000"))
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(100)
+                .build();
         couponRepository.save(coupon);
 
         // Event 생성
-        Event event = Event.create(
-                "테스트 이벤트",
-                "설명",
-                Event.EventType.DROP,
-                1,
-                true,
-                startDate,
-                endDate,
-                coupon
-        );
+        Event event = Event.builder()
+                .title("테스트 이벤트")
+                .description("설명")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startDate)
+                .endedAt(endDate)
+                .coupon(coupon)
+                .build();
         event.open(); // 이벤트를 OPEN 상태로 변경
         eventRepository.save(event);
 
         // EventOption 생성
-        EventOption eventOption = EventOption.create(
-                event,
-                productOption,
-                new BigDecimal("80000"),
-                50
-        );
+        EventOption eventOption = EventOption.builder()
+                .event(event)
+                .productOption(productOption)
+                .eventPrice(new BigDecimal("80000"))
+                .eventStock(50)
+                .build();
         eventOptionRepository.save(eventOption);
 
         entityManager.flush();
@@ -149,7 +149,6 @@ class EventCouponServiceTest extends ServiceConfig {
         // when
         EventCouponService.EventCouponIssueResult result = eventCouponService.issueCoupon(
                 event.getId(),
-                productOption.getProductOptionId(),
                 userId
         );
 
@@ -209,51 +208,51 @@ class EventCouponServiceTest extends ServiceConfig {
         // Coupon 생성
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
-        Coupon coupon = Coupon.create(
-                "중복 테스트 쿠폰",
-                DiscountType.AMOUNT,
-                new BigDecimal("10000"),
-                startDate,
-                endDate,
-                100
-        );
+        Coupon coupon = Coupon.builder()
+                .couponName("중복 테스트 쿠폰")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(new BigDecimal("10000"))
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(100)
+                .build();
         couponRepository.save(coupon);
 
         // Event 생성
-        Event event = Event.create(
-                "중복 테스트 이벤트",
-                "설명",
-                Event.EventType.DROP,
-                2, // 2번까지 발급 가능
-                true,
-                startDate,
-                endDate,
-                coupon
-        );
+        Event event = Event.builder()
+                .title("중복 테스트 이벤트")
+                .description("설명")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(2)
+                .isPublic(true)
+                .startedAt(startDate)
+                .endedAt(endDate)
+                .coupon(coupon)  // ✅ 수정: coupon 추가
+                .build();
+
         event.open();
         eventRepository.save(event);
 
         // EventOption 생성
-        EventOption eventOption = EventOption.create(
-                event,
-                productOption,
-                new BigDecimal("80000"),
-                50
-        );
+        EventOption eventOption = EventOption.builder()
+                .event(event)
+                .productOption(productOption)  // ✅ 수정
+                .eventPrice(new BigDecimal("80000"))  // ✅ 수정
+                .eventStock(50)  // ✅ 수정
+                .build();
         eventOptionRepository.save(eventOption);
 
         entityManager.flush();
         entityManager.clear();
 
         // 첫 번째 발급
-        eventCouponService.issueCoupon(event.getId(), productOption.getProductOptionId(), userId);
+        eventCouponService.issueCoupon(event.getId(), userId);
 
         // when
         // 두 번째 발급 시도
         EventCouponService.EventCouponIssueResult result = eventCouponService.issueCoupon(
                 event.getId(),
-                productOption.getProductOptionId(),
-                userId
+                userId  // ✅ 수정
         );
 
         // then
@@ -267,12 +266,10 @@ class EventCouponServiceTest extends ServiceConfig {
         // given
         Long userId = 3L;
         Long nonExistentEventId = 999999L;
-        Long nonExistentProductOptionId = 999999L;
 
         // when & then
         assertThatThrownBy(() -> eventCouponService.issueCoupon(
                 nonExistentEventId,
-                nonExistentProductOptionId,
                 userId
         ))
                 .isInstanceOf(BusinessException.class);
@@ -327,37 +324,37 @@ class EventCouponServiceTest extends ServiceConfig {
         // Coupon 생성
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
-        Coupon coupon = Coupon.create(
-                "테스트 쿠폰3",
-                DiscountType.AMOUNT,
-                new BigDecimal("10000"),
-                startDate,
-                endDate,
-                100
-        );
+        Coupon coupon = Coupon.builder()
+                .couponName("테스트 쿠폰3")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(new BigDecimal("10000"))
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(100)
+                .build();
         couponRepository.save(coupon);
 
         // Event 생성 (DRAFT 상태로 유지)
-        Event event = Event.create(
-                "DRAFT 상태 이벤트",
-                "설명",
-                Event.EventType.DROP,
-                1,
-                true,
-                startDate,
-                endDate,
-                coupon
-        );
+        Event event = Event.builder()
+                .title("DRAFT 상태 이벤트")
+                .description("설명")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(1)
+                .isPublic(true)
+                .startedAt(startDate)
+                .endedAt(endDate)
+                .coupon(coupon)
+                .build();
         // open() 호출하지 않음 - DRAFT 상태 유지
         eventRepository.save(event);
 
         // EventOption 생성
-        EventOption eventOption = EventOption.create(
-                event,
-                productOption,
-                new BigDecimal("80000"),
-                50
-        );
+        EventOption eventOption = EventOption.builder()
+                .event(event)
+                .productOption(productOption)
+                .eventPrice(new BigDecimal("80000"))
+                .eventStock(50)
+                .build();
         eventOptionRepository.save(eventOption);
 
         entityManager.flush();
@@ -366,7 +363,6 @@ class EventCouponServiceTest extends ServiceConfig {
         // when & then
         assertThatThrownBy(() -> eventCouponService.issueCoupon(
                 event.getId(),
-                productOption.getProductOptionId(),
                 userId
         ))
                 .isInstanceOf(BusinessException.class);
@@ -422,50 +418,49 @@ class EventCouponServiceTest extends ServiceConfig {
         // Coupon 생성
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
-        Coupon coupon = Coupon.create(
-                "재고 부족 테스트 쿠폰",
-                DiscountType.AMOUNT,
-                new BigDecimal("10000"),
-                startDate,
-                endDate,
-                100
-        );
+        Coupon coupon = Coupon.builder()
+                .couponName("재고 부족 테스트 쿠폰")
+                .discountType(DiscountType.AMOUNT)
+                .discountValue(new BigDecimal("10000"))
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalQuantity(1)  // ✅ 수정: 쿠폰 재고도 1개로
+                .build();
         couponRepository.save(coupon);
 
         // Event 생성
-        Event event = Event.create(
-                "재고 부족 테스트 이벤트",
-                "설명",
-                Event.EventType.DROP,
-                10,
-                true,
-                startDate,
-                endDate,
-                coupon
-        );
+        Event event = Event.builder()
+                .title("재고 부족 테스트 이벤트")
+                .description("설명")
+                .eventType(Event.EventType.DROP)
+                .limitPerUser(10)
+                .isPublic(true)
+                .startedAt(startDate)
+                .endedAt(endDate)
+                .coupon(coupon)
+                .build();
         event.open();
         eventRepository.save(event);
 
         // EventOption 생성 (재고 1개만)
-        EventOption eventOption = EventOption.create(
-                event,
-                productOption,
-                new BigDecimal("80000"),
-                1 // 재고 1개
-        );
+        EventOption eventOption = EventOption.builder()
+                .event(event)
+                .productOption(productOption)
+                .eventPrice(new BigDecimal("80000"))
+                .eventStock(1)
+                .build();
         eventOptionRepository.save(eventOption);
 
         entityManager.flush();
         entityManager.clear();
 
         // 첫 번째 사용자가 발급받음
-        eventCouponService.issueCoupon(event.getId(), productOption.getProductOptionId(), userId1);
+        eventCouponService.issueCoupon(event.getId(), userId1);
 
         // when & then
         // 두 번째 사용자가 발급 시도 - 재고 부족으로 실패
         assertThatThrownBy(() -> eventCouponService.issueCoupon(
                 event.getId(),
-                productOption.getProductOptionId(),
                 userId2
         ))
                 .isInstanceOf(BusinessException.class);

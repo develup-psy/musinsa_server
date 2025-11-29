@@ -526,12 +526,12 @@ class OrderServiceTest extends ServiceConfig {
     private Order createOrder(Long userId, String orderNo, List<OrderProduct> orderProducts, Long totalPrice, OrderStatus orderStatus) {
         return Order
                 .builder()
-                .userId(userId)
-                .orderNo(orderNo)
-                .status(orderStatus)
-                .totalPrice(new Money(totalPrice))
-                .orderProducts(orderProducts)
-                .build();
+                        .userId(userId)
+                        .orderNo(orderNo)
+                        .status(orderStatus)
+                        .totalPrice(new Money(totalPrice))
+                        .orderProducts(orderProducts)
+                        .build();
     }
 
     private OrderProduct createOrderProduct(ProductOption productOption, int quantity) {

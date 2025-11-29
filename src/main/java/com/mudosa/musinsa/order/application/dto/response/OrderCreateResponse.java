@@ -17,8 +17,8 @@ public class OrderCreateResponse {
     public static OrderCreateResponse of(Long orderId, String orderNo) {
         return OrderCreateResponse
                 .builder()
-                .orderId(orderId)
-                .orderNo(orderNo)
-                .build();
+                        .orderId(orderId)
+                        .orderNo(orderNo)
+                        .build();
     }
 }

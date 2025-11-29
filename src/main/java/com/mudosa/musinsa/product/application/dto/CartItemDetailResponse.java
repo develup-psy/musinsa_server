@@ -83,10 +83,10 @@ public class CartItemDetailResponse {
             .map(mapping -> {
                 OptionValue optionValue = mapping.getOptionValue();
                 return OptionValueSummary.builder()
-                    .optionValueId(optionValue != null ? optionValue.getOptionValueId() : null)
-                    .optionName(optionValue != null ? optionValue.getOptionName() : null)
-                    .optionValue(optionValue != null ? optionValue.getOptionValue() : null)
-                    .build();
+                        .optionValueId(optionValue != null ? optionValue.getOptionValueId() : null)
+                        .optionName(optionValue != null ? optionValue.getOptionName() : null)
+                        .optionValue(optionValue != null ? optionValue.getOptionValue() : null)
+                        .build();
             })
             .collect(Collectors.toList());
 
@@ -95,19 +95,19 @@ public class CartItemDetailResponse {
             : null;
             
         return CartItemDetailResponse.builder()
-            .cartItemId(cartItem.getCartItemId())
-            .userId(cartItem.getUser() != null ? cartItem.getUser().getId() : null)
-            .productId(product != null ? product.getProductId() : null)
-            .productOptionId(productOption != null ? productOption.getProductOptionId() : null)
-            .productName(product != null ? product.getProductName() : null)
-            .productInfo(product != null ? product.getProductInfo() : null)
-            .brandName(product != null ? product.getBrandName() : null)
-            .quantity(cartItem.getQuantity())
-            .unitPrice(unitAmount)
-            .stockQuantity(stockQuantity)
-            .hasStock(hasStock)
-            .thumbnailUrl(thumbnailUrl)
-            .optionValues(optionSummaries)
-            .build();
+                .cartItemId(cartItem.getCartItemId())
+                .userId(cartItem.getUser() != null ? cartItem.getUser().getId() : null)
+                .productId(product != null ? product.getProductId() : null)
+                .productOptionId(productOption != null ? productOption.getProductOptionId() : null)
+                .productName(product != null ? product.getProductName() : null)
+                .productInfo(product != null ? product.getProductInfo() : null)
+                .brandName(product != null ? product.getBrandName() : null)
+                .quantity(cartItem.getQuantity())
+                .unitPrice(unitAmount)
+                .stockQuantity(stockQuantity)
+                .hasStock(hasStock)
+                .thumbnailUrl(thumbnailUrl)
+                .optionValues(optionSummaries)
+                .build();
     }
 }

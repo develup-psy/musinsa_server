@@ -32,13 +32,13 @@ public interface ProductOptionRepository extends JpaRepository<ProductOption, Lo
 
     // 동일한 옵션 값 조합이 이미 존재하는지 확인한다.
     @Query("""
-        select (count(po) > 0)
+        select case when count(po) > 0 then true else false end
         from ProductOption po
-        join po.productOptionValues pov
+        join po.productOptionValues povSize
+        join po.productOptionValues povColor
         where po.product.productId = :productId
-        and pov.optionValue.optionValueId in (:sizeOptionValueId, :colorOptionValueId)
-        group by po.productOptionId
-        having count(distinct pov.optionValue.optionValueId) = 2
+          and povSize.optionValue.optionValueId = :sizeOptionValueId
+          and povColor.optionValue.optionValueId = :colorOptionValueId
         """)
     boolean existsByProductIdAndOptionValueIds(@Param("productId") Long productId,
                                                @Param("sizeOptionValueId") Long sizeOptionValueId,

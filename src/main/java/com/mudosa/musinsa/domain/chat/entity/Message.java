@@ -56,12 +56,12 @@ public class Message {
 
   public static Message createMessage(String content, LocalDateTime now, ChatPart chatPart, Message parent) {
     return Message.builder()
-        .chatPart(chatPart)
-        .chatId(chatPart.getChatRoom().getChatId())
-        .content(StringUtils.hasText(content) ? content.trim() : null)
-        .parent(parent)
-        .createdAt(now)
-        .build();
+            .chatPart(chatPart)
+            .chatId(chatPart.getChatRoom().getChatId())
+            .content(StringUtils.hasText(content) ? content.trim() : null)
+            .parent(parent)
+            .createdAt(now)
+            .build();
   }
 
   public boolean isSameRoom(Long chatId) {
