@@ -51,7 +51,6 @@ jwt:
   expiration: ${JWT_ACCESS_EXPIRATION:86400000}    # 24시간 (개발용 기본값)
   refresh-expiration: ${JWT_REFRESH_EXPIRATION:2592000000}  # 30일 (개발용 기본값)
 
-
 aws:
   s3:
     bucket: ${S3_BUCKET}

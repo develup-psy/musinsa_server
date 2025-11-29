@@ -11,6 +11,8 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  jmx:
+    enabled: true
 
 tosspayments:
   secret-key: test_gsk_docs_OaPz8L5KdmQXkzRz3y47BMw6
@@ -32,14 +34,24 @@ aws:
 server:
   port: 8080
   address: 0.0.0.0
+  tomcat:
+    max-threads: 500
+    max-connections: 10000
+    accept-count: 4096
 
 management:
   server:
-    port: 8082
+    port: 8080
   endpoints:
     web:
       exposure:
-        include: prometheus, health, info
+        include: "*"
+  metrics:
+    enable:
+      tomcat: true
+  endpoint:
+    metrics:
+      enabled: true
 
   tracing:
     enabled: true
@@ -48,7 +60,7 @@ management:
 
   otlp:
     tracing:
-      endpoint: http://172.16.24.21:4318/v1/traces #21 대신 본인 포트로
+      endpoint: http://172.16.24.77:4318/v1/traces #21 대신 본인 포트로
 
 
 logging:
