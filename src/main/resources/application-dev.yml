@@ -60,7 +60,7 @@ management:
 
   otlp:
     tracing:
-      endpoint: http://172.16.24.77:4318/v1/traces #21 대신 본인 포트로
+      endpoint: http://172.30.1.18:4318/v1/traces #21 대신 본인 포트로
 
 
 logging:
