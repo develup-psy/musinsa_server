@@ -28,16 +28,34 @@ class CategoryQueryControllerTest extends ControllerTestSupport {
     @DisplayName("카테고리 트리를 조회한다.")
     void getCategoryTree() throws Exception {
         // given
-        CategoryTreeResponse.CategoryNode tops = new CategoryTreeResponse.CategoryNode(
-            1L, "상의", "상의", "tops.jpg",
-            List.of(new CategoryTreeResponse.CategoryNode(2L, "티셔츠", "상의>티셔츠", "tee.jpg", List.of()))
-        );
-        CategoryTreeResponse.CategoryNode bottoms = new CategoryTreeResponse.CategoryNode(
-            3L, "하의", "하의", "bottoms.jpg",
-            List.of(new CategoryTreeResponse.CategoryNode(4L, "바지", "하의>바지", "pants.jpg", List.of()))
-        );
+        CategoryTreeResponse.CategoryNode tops = CategoryTreeResponse.CategoryNode.builder()
+            .categoryId(1L)
+            .categoryName("상의")
+            .categoryPath("상의")
+            .imageUrl("tops.jpg")
+            .children(List.of(CategoryTreeResponse.CategoryNode.builder()
+                .categoryId(2L)
+                .categoryName("티셔츠")
+                .categoryPath("상의>티셔츠")
+                .imageUrl("tee.jpg")
+                .children(List.of())
+                .build()))
+            .build();
+        CategoryTreeResponse.CategoryNode bottoms = CategoryTreeResponse.CategoryNode.builder()
+            .categoryId(3L)
+            .categoryName("하의")
+            .categoryPath("하의")
+            .imageUrl("bottoms.jpg")
+            .children(List.of(CategoryTreeResponse.CategoryNode.builder()
+                .categoryId(4L)
+                .categoryName("바지")
+                .categoryPath("하의>바지")
+                .imageUrl("pants.jpg")
+                .children(List.of())
+                .build()))
+            .build();
         given(productQueryService.getCategoryTree())
-            .willReturn(new CategoryTreeResponse(List.of(tops, bottoms)));
+            .willReturn(CategoryTreeResponse.builder().categories(List.of(tops, bottoms)).build());
 
         // when // then
         mockMvc.perform(get("/api/categories/tree")

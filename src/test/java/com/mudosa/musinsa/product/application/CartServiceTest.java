@@ -508,6 +508,7 @@ class CartServiceTest extends ServiceConfig {
             "상의/티셔츠",
             true,
             BigDecimal.ZERO,
+            "http://example.com/thumb.jpg",
             List.of(),
             List.of()
         );

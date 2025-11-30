@@ -73,6 +73,7 @@ class ProductTest {
 			categoryPath,
 			true,
 			BigDecimal.ZERO,
+			"http://example.com/thumb.jpg",
 			images,
 			options
 		);
@@ -105,6 +106,7 @@ class ProductTest {
 			categoryPath,
 			true,
 			BigDecimal.ZERO,
+			"http://example.com/thumb.jpg",
 			images,
 			options
 		))
@@ -142,6 +144,7 @@ class ProductTest {
 			categoryPath,
 			true,
 			BigDecimal.ZERO,
+			"http://example.com/thumb.jpg",
 			images,
 			options
 		))

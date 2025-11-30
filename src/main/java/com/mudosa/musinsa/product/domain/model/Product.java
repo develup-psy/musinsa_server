@@ -4,6 +4,7 @@ import com.mudosa.musinsa.brand.domain.model.Brand;
 import com.mudosa.musinsa.common.domain.model.BaseEntity;
 import com.mudosa.musinsa.exception.BusinessException;
 import com.mudosa.musinsa.exception.ErrorCode;
+import org.springframework.util.StringUtils;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -48,6 +49,9 @@ public class Product extends BaseEntity {
     @Column(name = "default_price", precision = 10, scale = 2)
     private BigDecimal defaultPrice;
 
+    @Column(name = "thumbnail_image", length = 2048)
+    private String thumbnailImage;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "product_gender_type", nullable = false)
     private ProductGenderType productGenderType;
@@ -69,6 +73,7 @@ public class Product extends BaseEntity {
                                  String categoryPath,
                                  Boolean isAvailable,
                                  BigDecimal defaultPrice,
+                                 String thumbnailImage,
                                  java.util.List<Image> images,
                                  java.util.List<ProductOption> productOptions) {
         if (productName == null || productName.trim().isEmpty()) {
@@ -80,9 +85,12 @@ public class Product extends BaseEntity {
         if (productGenderType == null) {
             throw new BusinessException(ErrorCode.PRODUCT_GENDER_TYPE_REQUIRED);
         }
+        if (!StringUtils.hasText(thumbnailImage)) {
+            throw new BusinessException(ErrorCode.IMAGE_REQUIRED, "대표 썸네일 이미지를 지정해야 합니다.");
+        }
 
         return new Product(brand, productName, productInfo, productGenderType, brandName, categoryPath,
-                isAvailable, images, productOptions, defaultPrice);
+                isAvailable, images, productOptions, defaultPrice, thumbnailImage);
     }
  
     @Builder
@@ -90,7 +98,8 @@ public class Product extends BaseEntity {
                    ProductGenderType productGenderType, String brandName, String categoryPath, Boolean isAvailable,
                    java.util.List<Image> images,
                    java.util.List<ProductOption> productOptions,
-                   BigDecimal defaultPrice) {
+                   BigDecimal defaultPrice,
+                   String thumbnailImage) {
 
         this.brand = brand;
         this.productName = productName;
@@ -100,6 +109,7 @@ public class Product extends BaseEntity {
         this.categoryPath = categoryPath;
         this.isAvailable = isAvailable != null ? isAvailable : true;
         this.defaultPrice = defaultPrice != null ? defaultPrice : BigDecimal.ZERO;
+        this.thumbnailImage = thumbnailImage;
 
         if (images != null) {
             images.forEach(this::addImage);
@@ -108,6 +118,14 @@ public class Product extends BaseEntity {
         if (productOptions != null) {
             productOptions.forEach(this::addProductOption);
         }
+    }
+
+    // 썸네일 이미지를 교체한다.
+    public void changeThumbnailImage(String thumbnailImage) {
+        if (!StringUtils.hasText(thumbnailImage)) {
+            throw new BusinessException(ErrorCode.IMAGE_REQUIRED, "대표 썸네일 이미지를 지정해야 합니다.");
+        }
+        this.thumbnailImage = thumbnailImage;
     }
 
     // 이미지 엔티티를 상품과 연결하고 컬렉션에 추가한다.

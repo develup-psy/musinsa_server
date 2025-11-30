@@ -96,7 +96,10 @@ public class ProductCommandService {
 			.min(BigDecimal::compareTo)
 			.orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_PRICE_REQUIRED));
 		
-		// 8. 상품 및 하위 엔티티 생성
+		// 8. 썸네일 이미지 결정 (명시적 썸네일이 없으면 첫 번째 이미지 사용)
+		String thumbnailUrl = resolveThumbnailUrl(request.getImages());
+		
+		// 9. 상품 및 하위 엔티티 생성
 		Product product = Product.create(
 			brand,
 			request.getProductName(),
@@ -106,17 +109,18 @@ public class ProductCommandService {
 			category.buildPath(),
 			request.getIsAvailable(),
 			defaultPrice,
-			null,
-			null
+			thumbnailUrl,
+			Collections.emptyList(),
+			Collections.emptyList()
 		);
 
-		// 9. 이미지 및 옵션 추가
+		// 10. 이미지 및 옵션 추가
 		request.getImages().forEach(image -> {
 			Image img = Image.create(product, image.getImageUrl(), image.getIsThumbnail());
 			product.addImage(img);
 		});
 
-		// 10. 옵션 생성 및 추가
+		// 11. 옵션 생성 및 추가
 		Set<OptionCombination> optionCombinations = new HashSet<>();
 		optionRequests.forEach(option -> {
 			OptionCombination combination = resolveCombination(option.getOptionValueIds(), optionValueMap);
@@ -134,7 +138,7 @@ public class ProductCommandService {
 			product.addProductOption(productOption);
 		});
 
-		// 11. 상품 저장 및 ID 반환
+		// 12. 상품 저장 및 ID 반환
 		Product saved = productRepository.save(product);
 		return saved.getProductId();
 	}
@@ -183,6 +187,7 @@ public class ProductCommandService {
 				Image img = Image.create(product, image.getImageUrl(), Boolean.TRUE.equals(image.getIsThumbnail()));
 				product.addImage(img);
 			});
+			product.changeThumbnailImage(resolveThumbnailUrlForUpdate(request.getImages()));
 			changed = true;
 		}
 
@@ -423,6 +428,30 @@ public class ProductCommandService {
 		public int hashCode() {
 			return Objects.hash(sizeOptionValueId, colorOptionValueId);
 		}
+	}
+
+	// 썸네일 URL을 결정한다. 명시적 썸네일이 없으면 첫 번째 이미지를 사용한다.
+	private String resolveThumbnailUrl(List<ProductCreateRequest.ImageCreateRequest> images) {
+		return resolveThumbnailUrl(images, ProductCreateRequest.ImageCreateRequest::getIsThumbnail,
+			ProductCreateRequest.ImageCreateRequest::getImageUrl);
+	}
+
+	// 상품 수정 시 썸네일 URL을 결정한다. 명시적 썸네일이 없으면 첫 번째 이미지를 사용한다.
+	private String resolveThumbnailUrlForUpdate(List<ProductUpdateRequest.ImageUpdateRequest> images) {
+		return resolveThumbnailUrl(images, ProductUpdateRequest.ImageUpdateRequest::getIsThumbnail,
+			ProductUpdateRequest.ImageUpdateRequest::getImageUrl);
+	}
+
+	private <T> String resolveThumbnailUrl(List<T> images, Function<T, Boolean> isThumbnailGetter,
+										   Function<T, String> imageUrlGetter) {
+		if (images == null || images.isEmpty()) {
+			throw new BusinessException(ErrorCode.IMAGE_REQUIRED);
+		}
+		return images.stream()
+			.filter(img -> Boolean.TRUE.equals(isThumbnailGetter.apply(img)))
+			.map(imageUrlGetter)
+			.findFirst()
+			.orElseGet(() -> imageUrlGetter.apply(images.get(0)));
 	}
 
 }

@@ -55,3 +55,6 @@ Thumbs.db
 
 ### Docker ###
 docker-compose.override.yml
+
+### Redis-cache ###
+dump.rdb

@@ -22,11 +22,15 @@ public class RedisConfig {
   @Value("${spring.data.redis.password:}")
   private String redisPassword;
 
+  @Value("${spring.data.redis.database:0}")
+  private int redisDatabase;
+
   @Bean
   public RedisConnectionFactory redisConnectionFactory() {
     RedisStandaloneConfiguration standaloneConfig = new RedisStandaloneConfiguration();
     standaloneConfig.setHostName(redisHost);
     standaloneConfig.setPort(redisPort);
+    standaloneConfig.setDatabase(redisDatabase);
 
     if (redisPassword != null && !redisPassword.isEmpty()) {
       standaloneConfig.setPassword(redisPassword);

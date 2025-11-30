@@ -53,10 +53,8 @@ class ProductQueryControllerTest extends ControllerTestSupport {
                     .categoryPath("상의>티셔츠")
                     .build()
             ))
-            .totalElements(1)
-            .totalPages(1)
-            .page(0)
-            .size(24)
+            .nextCursor("cursor-10")
+            .hasNext(true)
             .build();
 
         given(productQueryService.searchProducts(any()))
@@ -68,7 +66,8 @@ class ProductQueryControllerTest extends ControllerTestSupport {
                 .with(user(userDetails)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.products[0].productId").value(10L))
-            .andExpect(jsonPath("$.totalElements").value(1));
+            .andExpect(jsonPath("$.hasNext").value(true))
+            .andExpect(jsonPath("$.nextCursor").value("cursor-10"));
     }
 
     @Test
@@ -86,8 +85,8 @@ class ProductQueryControllerTest extends ControllerTestSupport {
                 .param("gender", "MEN")
                 .param("brandId", "5")
                 .param("priceSort", "LOWEST")
-                .param("page", "2")
-                .param("size", "10"))
+                .param("cursor", "1000:10")
+                .param("limit", "30"))
             .andExpect(status().isOk());
 
         // then
@@ -100,8 +99,8 @@ class ProductQueryControllerTest extends ControllerTestSupport {
         assertThat(condition.getGender()).isEqualTo(ProductGenderType.MEN);
         assertThat(condition.getBrandId()).isEqualTo(5L);
         assertThat(condition.getPriceSort()).isEqualTo(ProductSearchCondition.PriceSort.LOWEST);
-        assertThat(condition.getPageable().getPageNumber()).isEqualTo(2);
-        assertThat(condition.getPageable().getPageSize()).isEqualTo(10);
+        assertThat(condition.getCursor()).isEqualTo("1000:10");
+        assertThat(condition.getLimit()).isEqualTo(30);
     }
 
     @Test

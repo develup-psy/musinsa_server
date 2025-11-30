@@ -4,6 +4,12 @@ spring:
     url: jdbc:mysql://localhost:3306/musinsa_test?serverTimezone=Asia/Seoul&useSSL=false&allowPublicKeyRetrieval=true
     username: root
     password: 1234
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 15
 
   jpa:
     hibernate:
@@ -46,3 +52,7 @@ logging:
       springframework.orm.jpa: DEBUG
       springframework.transaction: DEBUG
     com.mudosa.musinsa: DEBUG
+
+cache:
+  preload:
+    enabled: false
