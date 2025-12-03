@@ -14,6 +14,7 @@ import com.mudosa.musinsa.payment.domain.model.PaymentEventType;
 import com.mudosa.musinsa.payment.domain.model.PgProvider;
 import com.mudosa.musinsa.payment.domain.repository.PaymentRepository;
 import com.mudosa.musinsa.payment.application.event.PaymentApprovedEvent;
+import io.micrometer.observation.annotation.Observed;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -36,6 +37,7 @@ public class PaymentService {
     private final PaymentProcessor paymentProcessor;
     private final PaymentConfirmService paymentConfirmService;
 
+    @Observed(name = "payment.confirmAndCompleteOrder", contextualName = "결제승인-주문완료")
     public PaymentConfirmResponse confirmPaymentAndCompleteOrder(PaymentConfirmRequest request, Long userId) {
         Long paymentId = null;
         Long orderId = null;
@@ -92,6 +94,7 @@ public class PaymentService {
                 || errorCode == PAYMENT_TIMEOUT;
     }
 
+    @Observed(name = "payment.cancelRequest", contextualName = "결제-취소-요청")
     public PaymentCancelResponse cancelPayment(PaymentCancelRequest request, Long userId, LocalDateTime cancelledAt) {
         try{
             //TX1: 결제 상태 변경, 주문 관련 원복

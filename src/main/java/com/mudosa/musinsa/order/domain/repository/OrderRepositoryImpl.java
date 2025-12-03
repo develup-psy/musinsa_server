@@ -11,6 +11,7 @@ import com.querydsl.core.types.dsl.StringExpression;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import io.micrometer.observation.annotation.Observed;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -31,6 +32,7 @@ public class OrderRepositoryImpl implements OrderRepositoryCustom{
 
     private final JPAQueryFactory queryFactory;
 
+    @Observed(name = "repository.findOrderItems", contextualName = "주문상품-조회-QueryDSL")
     @Override
     public List<OrderItem> findOrderItems(String orderNo) {
         return queryFactory
@@ -53,6 +55,7 @@ public class OrderRepositoryImpl implements OrderRepositoryCustom{
                 .fetch();
     }
 
+    @Observed(name = "repository.findFlatOrderList", contextualName = "주문목록-조회-QueryDSL")
     @Override
     public List<OrderFlatDto> findFlatOrderListWithDetails(Long userId) {
         StringExpression sizeValue = createSizeValueExpression();

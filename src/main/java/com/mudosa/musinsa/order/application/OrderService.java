@@ -1,6 +1,5 @@
 package com.mudosa.musinsa.order.application;
 
-import com.mudosa.musinsa.coupon.domain.repository.MemberCouponRepository;
 import com.mudosa.musinsa.exception.BusinessException;
 import com.mudosa.musinsa.exception.ErrorCode;
 import com.mudosa.musinsa.order.application.dto.*;
@@ -18,6 +17,7 @@ import com.mudosa.musinsa.product.domain.model.ProductOption;
 import com.mudosa.musinsa.product.domain.repository.CartItemRepository;
 import com.mudosa.musinsa.product.domain.repository.ProductOptionRepository;
 import com.mudosa.musinsa.user.domain.repository.UserRepository;
+import io.micrometer.observation.annotation.Observed;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -37,9 +37,9 @@ public class OrderService {
     private final CartItemRepository cartItemRepository;
     private final ProductOptionRepository productOptionRepository;
     private final UserRepository userRepository;
-    private final MemberCouponRepository memberCouponRepository;
     private final PaymentRepository paymentRepository;
 
+    @Observed(name = "order.create", contextualName = "주문-생성")
     @Transactional
     public OrderCreateResponse createPendingOrder(OrderCreateRequest request, Long userId) {
 
@@ -61,6 +61,7 @@ public class OrderService {
         return OrderCreateResponse.of(savedOrder.getId(), savedOrder.getOrderNo());
     }
 
+    @Observed(name = "order.pending.fetch", contextualName = "주문서-조회")
     @Transactional(readOnly = true)
     public PendingOrderResponse fetchPendingOrder(String orderNo) {
         // 주문 조회
@@ -85,6 +86,7 @@ public class OrderService {
         );
     }
 
+    @Observed(name = "order.complete", contextualName = "주문-완료")
     @Transactional
     public Long completeOrder(String orderNo) {
         //주문 조회
@@ -131,6 +133,7 @@ public class OrderService {
         return order.getId();
     }
 
+    @Observed(name = "order.deleteCartItems", contextualName = "장바구니-삭제")
     public void deleteCartItems(Long orderId, Long userId) {
         //주문 조회
         Order order = orderRepository.findById(orderId)
@@ -147,6 +150,7 @@ public class OrderService {
         );
     }
 
+    @Observed(name = "order.rollback", contextualName = "주문-롤백")
     @Transactional
     public void rollbackOrder(Long orderId) {
         Order order = orderRepository.findById(orderId)
@@ -165,6 +169,7 @@ public class OrderService {
     }
 
 
+    @Observed(name = "order.validateStock", contextualName = "재고-검증")
     private void validateStock(Map<ProductOption, Integer> optionsWithQuantity) {
         //재고 확인
         List<InsufficientStockItem> insufficientItems = optionsWithQuantity.entrySet().stream()
@@ -181,6 +186,7 @@ public class OrderService {
         }
     }
 
+    @Observed(name = "order.mapProductOptions", contextualName = "상품옵션-매핑")
     private Map<ProductOption, Integer> getProductOptionIntegerMap(OrderCreateRequest request) {
         List<Long> optionIds = request.getItems().stream()
                 .map(OrderCreateItem::getProductOptionId)
@@ -267,6 +273,7 @@ public class OrderService {
         return new OrderListResponse(resultList);
     }
 
+    @Observed(name = "order.detail.fetch", contextualName = "주문-상세조회")
     @Transactional(readOnly = true)
     public OrderDetailResponse fetchOrderDetail(String orderNo) {
         // 주문 조회
@@ -307,6 +314,7 @@ public class OrderService {
                 .build();
     }
 
+    @Observed(name = "order.cancel", contextualName = "주문-취소")
     public void cancelOrder(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
@@ -323,6 +331,7 @@ public class OrderService {
         orderRepository.save(order);
     }
 
+    @Observed(name = "order.rollbackCancel", contextualName = "주문-취소-롤백")
     public void rollbackOrderCancel(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));

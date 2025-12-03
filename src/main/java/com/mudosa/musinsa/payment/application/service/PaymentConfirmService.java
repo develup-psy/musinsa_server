@@ -9,6 +9,7 @@ import com.mudosa.musinsa.payment.application.dto.PaymentResponseDto;
 import com.mudosa.musinsa.payment.domain.model.Payment;
 import com.mudosa.musinsa.payment.domain.model.PaymentEventType;
 import com.mudosa.musinsa.payment.domain.repository.PaymentRepository;
+import io.micrometer.observation.annotation.Observed;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ public class PaymentConfirmService {
     private final OrderService orderService;
     private final PaymentRepository paymentRepository;
 
+    @Observed(name = "payment.transaction.create", contextualName = "결제-트랜잭션-생성")
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     protected PaymentCreationResult createPaymentTransaction(PaymentCreateDto request, Long userId) {
         // 주문 완료(재고 차감, 주문 상태 변경)
@@ -49,6 +51,7 @@ public class PaymentConfirmService {
                 .build();
     }
 
+    @Observed(name = "payment.approve", contextualName = "결제-승인")
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void approvePayment(Long paymentId, Long userId, PaymentResponseDto paymentResponseDto, Long orderId) {
         //장바구니 삭제
@@ -66,6 +69,7 @@ public class PaymentConfirmService {
         paymentRepository.save(payment);
     }
 
+    @Observed(name = "payment.fail", contextualName = "결제-실패")
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void failPayment(Long paymentId, String errorMessage, Long userId, Long orderId) {
         //주문 및 재고 롤백
@@ -81,6 +85,7 @@ public class PaymentConfirmService {
     }
 
 
+    @Observed(name = "payment.manualCheck", contextualName = "결제-수동확인")
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     protected void manualPaymentCheck(Long paymentId, Long userId){
         Payment payment = paymentRepository.findById(paymentId).orElse(null);
@@ -89,6 +94,7 @@ public class PaymentConfirmService {
         paymentRepository.save(payment);
     }
 
+    @Observed(name = "payment.cancel", contextualName = "결제-취소")
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void cancelPayment(String paymentTransactionId, String cancelReason, Long userId, LocalDateTime cancelledAt) {
         log.info(paymentTransactionId);
@@ -104,6 +110,7 @@ public class PaymentConfirmService {
         orderService.cancelOrder(payment.getOrderId());
     }
 
+    @Observed(name = "payment.cancelFail", contextualName = "결제-취소실패")
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void failCancel(String paymentKey, String message, Long userId) {
         //결제 상태 변경

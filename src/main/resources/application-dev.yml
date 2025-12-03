@@ -4,8 +4,13 @@ spring:
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 50
+      minimum-idle: 10
+      connection-timeout: 20000
 
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: none
     properties:
@@ -56,21 +61,25 @@ management:
   tracing:
     enabled: true
     sampling:
-      probability: 1.0
+      probability: 0.1
+
+  observations:
+    annotations:
+      enabled: true
 
   otlp:
     tracing:
-      endpoint: http://172.30.1.18:4318/v1/traces #21 대신 본인 포트로
+      endpoint: http://172.31.22.88:4318/v1/traces
 
 
 logging:
   level:
     org:
       hibernate:
-        sql: debug
-        type.descriptor.sql.BasicBinder: TRACE
-        orm.jdbc.internal.LogicalConnectionImpl: DEBUG
-      springframework.orm.jpa: DEBUG
-      springframework.transaction: DEBUG
-      springframework.web.client.RestTemplate: DEBUG
-      com.mudosa.musinsa.common.client: DEBUG
+        sql: error
+        type.descriptor.sql.BasicBinder: error
+        orm.jdbc.internal.LogicalConnectionImpl: error
+      springframework.orm.jpa: error
+      springframework.transaction: error
+      springframework.web.client.RestTemplate: error
+      com.mudosa.musinsa.common.client: error

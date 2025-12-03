@@ -54,6 +54,7 @@ dependencies {
 
     // Jaeger
     implementation("io.micrometer:micrometer-tracing-bridge-otel")
+    implementation("io.micrometer:micrometer-tracing")
     implementation("io.opentelemetry:opentelemetry-exporter-otlp")
 
     // Lombok
