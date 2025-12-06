@@ -20,7 +20,7 @@ tosspayments:
   base_cancel_url: https://api.tosspayments.com/v1/payments
 
 fcm:
-  service-acount-file: key/fdbdproject.json
+  service-account-file: key/fdbdproject.json
   topic-name: fdbdMessage
   project-id: fdbdproject
 

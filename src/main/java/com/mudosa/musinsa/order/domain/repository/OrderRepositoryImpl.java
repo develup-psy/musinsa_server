@@ -36,7 +36,16 @@ public class OrderRepositoryImpl implements OrderRepositoryCustom{
     @Override
     public List<OrderItem> findOrderItems(String orderNo) {
         return queryFactory
-                .select(createOrderItemProjection())
+                .select(new QOrderItem(
+                        productOption.productOptionId,
+                        brand.nameKo,
+                        product.productName,
+                        productOption.productPrice.amount,
+                        orderProduct.productQuantity,
+                        createThumbnailImageSubquery(),
+                        createSizeValueExpression(),
+                        createColorValueExpression()
+                ))
                 .from(order)
                 .join(order.orderProducts, orderProduct)
                 .join(orderProduct.productOption, productOption)
@@ -91,19 +100,6 @@ public class OrderRepositoryImpl implements OrderRepositoryCustom{
                         productOption.productPrice.amount, orderProduct.productQuantity
                 )
                 .fetch();
-    }
-
-    private QOrderItem createOrderItemProjection() {
-        return new QOrderItem(
-                productOption.productOptionId,
-                brand.nameKo,
-                product.productName,
-                productOption.productPrice.amount,
-                orderProduct.productQuantity,
-                createThumbnailImageSubquery(),
-                createSizeValueExpression(),
-                createColorValueExpression()
-        );
     }
 
     private StringExpression createSizeValueExpression() {

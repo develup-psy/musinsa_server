@@ -5,9 +5,14 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     hikari:
-      maximum-pool-size: 50
-      minimum-idle: 10
+      maximum-pool-size: 200
+      minimum-idle: 50
+
       connection-timeout: 20000
+      max-lifetime: 270000
+      keepalive-time: 240000
+
+      register-mbeans: true
 
   jpa:
     open-in-view: false
@@ -61,7 +66,7 @@ management:
   tracing:
     enabled: true
     sampling:
-      probability: 0.1
+      probability: 0.01
 
   observations:
     annotations:

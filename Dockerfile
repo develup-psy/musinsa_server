@@ -19,7 +19,7 @@ COPY src src
 RUN ./gradlew clean bootJar -x test --no-daemon
 
 # Stage 2: Runtime Stage
-FROM eclipse-temurin:21-jre-jammy
+FROM eclipse-temurin:21-jdk-jammy
 
 # 보안 및 최적화를 위한 non-root 사용자 생성
 RUN groupadd -r spring && useradd -r -g spring spring

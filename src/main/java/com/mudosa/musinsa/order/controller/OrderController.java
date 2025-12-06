@@ -89,7 +89,6 @@ public class OrderController {
             @PathVariable String orderNo
     ){
         OrderDetailResponse response = orderService.fetchOrderDetail(orderNo);
-
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

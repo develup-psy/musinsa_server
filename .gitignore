@@ -40,7 +40,7 @@ out/
 ### Environment Variables ###
 .env
 .env.local
-.env.dev
+.env
 .env.test
 .env.prod
 !.env.prod.example

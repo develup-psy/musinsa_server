@@ -9,6 +9,8 @@ import com.mudosa.musinsa.product.domain.model.Product;
 import com.mudosa.musinsa.product.domain.model.ProductGenderType;
 import com.mudosa.musinsa.product.domain.model.ProductOption;
 import com.mudosa.musinsa.product.domain.vo.StockQuantity;
+import com.mudosa.musinsa.user.domain.model.User;
+import com.mudosa.musinsa.user.domain.model.UserRole;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -26,12 +28,13 @@ class OrderTest {
         //given
         Brand brand = createBrand();
         Product product = createProduct(brand);
+        User user = createUser();
         Inventory inventory = createInventory(10);
         ProductOption productOption = createProductOption(product, inventory, 10000L);
         Map<ProductOption, Integer> orderProductsWithQuantity = Map.of(productOption, 2);
 
         //when
-        Order order = Order.create(1L, 1L, orderProductsWithQuantity);
+        Order order = Order.create(1L, 1L, orderProductsWithQuantity, user);
 
         //then
         assertThat(order.getStatus()).isEqualTo(OrderStatus.PENDING);
@@ -42,9 +45,10 @@ class OrderTest {
     void createOrderWithNoProductOptions(){
         //given
         Map<ProductOption, Integer> orderProductsWithQuantity = null;
+        User user = createUser();
 
         //when & then
-        assertThatThrownBy(() -> Order.create(1L, 1L, orderProductsWithQuantity))
+        assertThatThrownBy(() -> Order.create(1L, 1L, orderProductsWithQuantity,user))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("상품 목록이 없는 주문은 생성할 수 없습니다");
     }
@@ -58,9 +62,10 @@ class OrderTest {
         Inventory inventory = createInventory(10);
         ProductOption productOption = createProductOption(product, inventory, 10000L);
         Map<ProductOption, Integer> orderProductsWithQuantity = Map.of(productOption, -10);
+        User user = createUser();
 
         //when & then
-        assertThatThrownBy(() -> Order.create(1L, 1L, orderProductsWithQuantity))
+        assertThatThrownBy(() -> Order.create(1L, 1L, orderProductsWithQuantity,user))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("상품은 1개 이상 주문 가능합니다");
     }
@@ -75,9 +80,10 @@ class OrderTest {
         Inventory inventory = createInventory(10);
         ProductOption productOption = createProductOption(product, inventory, 10000L);
         Map<ProductOption, Integer> orderProductsWithQuantity = Map.of(productOption, 2);
+        User user = createUser();
 
         //when
-        Order order = Order.create(1L, 1L, orderProductsWithQuantity);
+        Order order = Order.create(1L, 1L, orderProductsWithQuantity,user);
 
         //then
         assertThat(order.getTotalPrice().getAmount().compareTo(BigDecimal.valueOf(20000))).isZero();
@@ -92,7 +98,9 @@ class OrderTest {
         Inventory inventory = createInventory(10);
         ProductOption productOption = createProductOption(product, inventory, 10000L);
         Map<ProductOption, Integer> orderProductsWithQuantity = Map.of(productOption, 2);
-        Order order = Order.create(1L, 1L, orderProductsWithQuantity);
+        User user = createUser();
+
+        Order order = Order.create(1L, 1L, orderProductsWithQuantity,user);
 
         //when
         order.rollbackStatus();
@@ -131,7 +139,18 @@ class OrderTest {
                 .build();
     }
 
-
+    private User createUser() {
+        return User.builder()
+                .userName("testUser")
+                .password("password123")
+                .userEmail("test@example.com")
+                .contactNumber("010-1234-5678")
+                .role(UserRole.USER)
+                .currentAddress("서울시 강남구")
+                .avatarUrl("https://example.com/avatar.jpg")
+                .isActive(true)
+                .build();
+    }
 
     private ProductOption createProductOption(Product product, Inventory inventory, Long price) {
         return ProductOption.builder()

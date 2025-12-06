@@ -16,6 +16,7 @@ import com.mudosa.musinsa.payment.domain.repository.PaymentRepository;
 import com.mudosa.musinsa.product.domain.model.ProductOption;
 import com.mudosa.musinsa.product.domain.repository.CartItemRepository;
 import com.mudosa.musinsa.product.domain.repository.ProductOptionRepository;
+import com.mudosa.musinsa.user.domain.model.User;
 import com.mudosa.musinsa.user.domain.repository.UserRepository;
 import io.micrometer.observation.annotation.Observed;
 import lombok.RequiredArgsConstructor;
@@ -49,11 +50,15 @@ public class OrderService {
         //재고 확인
         validateStock(optionsWithQuantity);
 
+        //사용자 조회
+        User user = userRepository.findById(userId).orElseThrow(()->new BusinessException(ErrorCode.USER_NOT_FOUND));
+
         //주문 생성
         Order order = Order.create(
                 userId,
                 request.getCouponId(),
-                optionsWithQuantity
+                optionsWithQuantity,
+                user
         );
 
         Order savedOrder = orderRepository.save(order);
@@ -68,10 +73,6 @@ public class OrderService {
         Order order = orderRepository.findByOrderNo(orderNo)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
 
-        // 사용자 정보 조회
-        Long userId = order.getUserId();
-        UserInfoDto userInfo = userRepository.findDtoById(userId);
-
         // 상품 목록 조회
         List<OrderItem> orderProductsInfo = orderRepository.findOrderItems(orderNo);
 
@@ -80,9 +81,9 @@ public class OrderService {
                 order.getTotalPrice().getAmount(),
                 order.getTotalDiscount().getAmount(),
                 orderProductsInfo,
-                userInfo.userName(),
-                userInfo.currentAddress(),
-                userInfo.contactNumber()
+                order.getShippingName(),
+                order.getShippingAddress(),
+                order.getShippingPhone()
         );
     }
 
@@ -200,6 +201,7 @@ public class OrderService {
             throw new BusinessException(ErrorCode.PRODUCT_OPTION_NOT_FOUND);
         }
 
+        //TODO: Product N+1
         List<Long> list = productOptions.stream().filter(po -> !po.getProduct().getIsAvailable()).map(ProductOption::getProductOptionId).toList();
 
         //주문 상품 유효성 확인
@@ -284,10 +286,6 @@ public class OrderService {
             throw new BusinessException(ErrorCode.INVALID_ORDER_STATUS_TRANSITION);
         }
 
-        // 사용자 정보 조회
-        Long userId = order.getUserId();
-        UserInfoDto userInfo = userRepository.findDtoById(userId);
-
         // 상품 목록 조회
         List<OrderItem> orderProductsInfo = orderRepository.findOrderItems(orderNo);
 
@@ -300,9 +298,9 @@ public class OrderService {
                 .totalProductAmount(order.getTotalPrice().getAmount())
                 .discountAmount(order.getTotalDiscount().getAmount())
                 .orderedAt(order.getRegisteredAt())
-                .userName(userInfo.userName())
-                .userAddress(userInfo.currentAddress())
-                .userContactNumber(userInfo.contactNumber())
+                .userName(order.getShippingName())
+                .userAddress(order.getShippingAddress())
+                .userContactNumber(order.getShippingPhone())
                 .orderItems(orderProductsInfo)
                 .paymentFinalAmount(payment.getAmount())
                 .paymentMethod(payment.getMethod())
