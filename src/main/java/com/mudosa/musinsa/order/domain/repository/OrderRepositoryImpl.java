@@ -13,6 +13,7 @@ import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import io.micrometer.observation.annotation.Observed;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -32,6 +33,7 @@ public class OrderRepositoryImpl implements OrderRepositoryCustom{
 
     private final JPAQueryFactory queryFactory;
 
+    @Cacheable(value = "orderItems", key = "#orderNo")
     @Observed(name = "repository.findOrderItems", contextualName = "주문상품-조회-QueryDSL")
     @Override
     public List<OrderItem> findOrderItems(String orderNo) {

@@ -11,13 +11,15 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        show_sql: true
+        use_sql_comments: true
 
 
 tosspayments:
   secret-key: ${TOSS_SECRET_KEY:test_gsk_docs_OaPz8L5KdmQXkzRz3y47BMw6}
   client-key: ${TOSS_CLIENT_KEY:test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm}
-  confirm_url: https://api.tosspayments.com/v1/payments/confirm
-  base_cancel_url: https://api.tosspayments.com/v1/payments
+  confirm_url: http://localhost:8081/v1/payments/confirm
+  base_cancel_url: http://localhost:8081/v1/payments
 
 fcm:
   service-account-file: key/fdbdproject.json

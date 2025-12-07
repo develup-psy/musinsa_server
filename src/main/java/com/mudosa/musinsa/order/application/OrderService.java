@@ -87,6 +87,42 @@ public class OrderService {
         );
     }
 
+    @Observed(name = "order.detail.fetch", contextualName = "주문-상세조회")
+    public OrderDetailResponse fetchOrderDetail(String orderNo) {
+        // 주문 조회
+        Order order = orderRepository.findByOrderNo(orderNo)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+
+        if(!order.canFetchDetail()){
+            throw new BusinessException(ErrorCode.INVALID_ORDER_STATUS_TRANSITION);
+        }
+
+        // 상품 목록 조회
+        List<OrderItem> orderProductsInfo = orderRepository.findOrderItems(orderNo);
+
+        //결제 정보 조회
+        Payment payment = paymentRepository.findByOrderId(order.getId()).orElseThrow(()->new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
+
+        return OrderDetailResponse.builder()
+                .orderNo(order.getOrderNo())
+                .orderStatus(order.getStatus())
+                .totalProductAmount(order.getTotalPrice().getAmount())
+                .discountAmount(order.getTotalDiscount().getAmount())
+                .orderedAt(order.getRegisteredAt())
+                .userName(order.getShippingName())
+                .userAddress(order.getShippingAddress())
+                .userContactNumber(order.getShippingPhone())
+                .orderItems(orderProductsInfo)
+                .paymentFinalAmount(payment.getAmount())
+                .paymentMethod(payment.getMethod())
+                .pgProvider(payment.getPgProvider())
+                .approvedAt(payment.getApprovedAt())
+                .paymentStatus(payment.getStatus())
+                .cancelledAt(payment.getCancelledAt())
+                .paymentTransactionId(payment.getPgTransactionId())
+                .build();
+    }
+
     @Observed(name = "order.complete", contextualName = "주문-완료")
     @Transactional
     public Long completeOrder(String orderNo) {
@@ -194,14 +230,14 @@ public class OrderService {
                 .toList();
 
         //상품 옵션 조회
-        List<ProductOption> productOptions = productOptionRepository.findAllById(optionIds);
+        List<ProductOption> productOptions =
+                productOptionRepository.findByProductOptionIdIn(optionIds);
 
         //상품 옵션 Id 유효성 확인
         if(productOptions.size() != optionIds.size()){
             throw new BusinessException(ErrorCode.PRODUCT_OPTION_NOT_FOUND);
         }
 
-        //TODO: Product N+1
         List<Long> list = productOptions.stream().filter(po -> !po.getProduct().getIsAvailable()).map(ProductOption::getProductOptionId).toList();
 
         //주문 상품 유효성 확인
@@ -275,42 +311,7 @@ public class OrderService {
         return new OrderListResponse(resultList);
     }
 
-    @Observed(name = "order.detail.fetch", contextualName = "주문-상세조회")
-    @Transactional(readOnly = true)
-    public OrderDetailResponse fetchOrderDetail(String orderNo) {
-        // 주문 조회
-        Order order = orderRepository.findByOrderNo(orderNo)
-                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
 
-        if(!order.canFetchDetail()){
-            throw new BusinessException(ErrorCode.INVALID_ORDER_STATUS_TRANSITION);
-        }
-
-        // 상품 목록 조회
-        List<OrderItem> orderProductsInfo = orderRepository.findOrderItems(orderNo);
-
-        //결제 정보 조회
-        Payment payment = paymentRepository.findByOrderId(order.getId()).orElseThrow(()->new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
-
-        return OrderDetailResponse.builder()
-                .orderNo(order.getOrderNo())
-                .orderStatus(order.getStatus())
-                .totalProductAmount(order.getTotalPrice().getAmount())
-                .discountAmount(order.getTotalDiscount().getAmount())
-                .orderedAt(order.getRegisteredAt())
-                .userName(order.getShippingName())
-                .userAddress(order.getShippingAddress())
-                .userContactNumber(order.getShippingPhone())
-                .orderItems(orderProductsInfo)
-                .paymentFinalAmount(payment.getAmount())
-                .paymentMethod(payment.getMethod())
-                .pgProvider(payment.getPgProvider())
-                .approvedAt(payment.getApprovedAt())
-                .paymentStatus(payment.getStatus())
-                .cancelledAt(payment.getCancelledAt())
-                .paymentTransactionId(payment.getPgTransactionId())
-                .build();
-    }
 
     @Observed(name = "order.cancel", contextualName = "주문-취소")
     public void cancelOrder(Long orderId) {

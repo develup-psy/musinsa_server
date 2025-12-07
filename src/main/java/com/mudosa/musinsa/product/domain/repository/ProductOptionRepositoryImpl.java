@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 import static com.mudosa.musinsa.product.domain.model.QInventory.inventory;
+import static com.mudosa.musinsa.product.domain.model.QProduct.product;
 import static com.mudosa.musinsa.product.domain.model.QProductOption.productOption;
 
 @Repository
@@ -33,8 +34,11 @@ public class ProductOptionRepositoryImpl implements ProductOptionRepositoryCusto
     public List<ProductOption> findByProductOptionIdIn(List<Long> productOptionIds) {
         return jpaQueryFactory
                 .selectFrom(productOption)
+                .join(productOption.product, product).fetchJoin()
                 .join(productOption.inventory, inventory).fetchJoin()
                 .where(productOption.productOptionId.in(productOptionIds))
                 .fetch();
     }
+
+
 }
