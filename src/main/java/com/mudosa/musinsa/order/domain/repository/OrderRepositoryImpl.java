@@ -33,7 +33,6 @@ public class OrderRepositoryImpl implements OrderRepositoryCustom{
 
     private final JPAQueryFactory queryFactory;
 
-    @Cacheable(value = "orderItems", key = "#orderNo")
     @Observed(name = "repository.findOrderItems", contextualName = "주문상품-조회-QueryDSL")
     @Override
     public List<OrderItem> findOrderItems(String orderNo) {

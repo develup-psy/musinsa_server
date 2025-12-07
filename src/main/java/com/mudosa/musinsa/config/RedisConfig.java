@@ -1,5 +1,8 @@
 package com.mudosa.musinsa.config;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -40,14 +43,28 @@ public class RedisConfig {
   }
 
   @Bean
-  public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
+  public ObjectMapper objectMapper() {
+    ObjectMapper mapper = new ObjectMapper();
+    // LocalDateTime 등 Java Time API 객체를 직렬화/역직렬화할 수 있도록 모듈 등록
+    mapper.registerModule(new JavaTimeModule());
+
+    // JSON에 알 수 없는 필드가 있어도 무시하도록 설정
+    mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    return mapper;
+  }
+
+  @Bean
+  public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory, ObjectMapper objectMapper) {
     RedisTemplate<String, Object> template = new RedisTemplate<>();
     template.setConnectionFactory(connectionFactory);
 
+    // ObjectMapper를 사용하여 GenericJackson2JsonRedisSerializer 인스턴스 생성
+    GenericJackson2JsonRedisSerializer serializer = new GenericJackson2JsonRedisSerializer(objectMapper);
+
     template.setKeySerializer(new StringRedisSerializer());
-    template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+    template.setValueSerializer(serializer); // 커스텀 Serializer 사용
     template.setHashKeySerializer(new StringRedisSerializer());
-    template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer());
+    template.setHashValueSerializer(serializer); // 커스텀 Serializer 사용
 
     template.afterPropertiesSet();
     return template;

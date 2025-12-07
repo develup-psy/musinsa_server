@@ -1,5 +1,6 @@
 package com.mudosa.musinsa.order.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.mudosa.musinsa.common.domain.model.BaseEntity;
 import com.mudosa.musinsa.common.vo.Money;
 import com.mudosa.musinsa.exception.BusinessException;
@@ -39,6 +40,7 @@ public class Order extends BaseEntity {
     private Long couponId;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
     private List<OrderProduct> orderProducts;
 
     @Enumerated(EnumType.STRING)

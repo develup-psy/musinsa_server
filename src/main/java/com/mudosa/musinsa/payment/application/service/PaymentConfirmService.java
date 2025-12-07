@@ -3,6 +3,7 @@ package com.mudosa.musinsa.payment.application.service;
 import com.mudosa.musinsa.exception.BusinessException;
 import com.mudosa.musinsa.exception.ErrorCode;
 import com.mudosa.musinsa.order.application.OrderService;
+import com.mudosa.musinsa.order.domain.model.Order;
 import com.mudosa.musinsa.payment.application.dto.PaymentCreateDto;
 import com.mudosa.musinsa.payment.application.dto.PaymentCreationResult;
 import com.mudosa.musinsa.payment.application.dto.PaymentResponseDto;
@@ -55,7 +56,10 @@ public class PaymentConfirmService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void approvePayment(Long paymentId, Long userId, PaymentResponseDto paymentResponseDto, Long orderId) {
         //장바구니 삭제
-        orderService.deleteCartItems(orderId, userId);
+        Order order = orderService.deleteCartItems(orderId, userId);
+
+        // 주문 데이터 캐싱
+        orderService.cacheCompletedOrder(order);
 
         //결제 조회
         Payment payment = paymentRepository.findById(paymentId)

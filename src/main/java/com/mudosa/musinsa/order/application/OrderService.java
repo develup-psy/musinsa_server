@@ -1,5 +1,6 @@
 package com.mudosa.musinsa.order.application;
 
+import com.mudosa.musinsa.brand.domain.model.Brand;
 import com.mudosa.musinsa.exception.BusinessException;
 import com.mudosa.musinsa.exception.ErrorCode;
 import com.mudosa.musinsa.order.application.dto.*;
@@ -13,7 +14,7 @@ import com.mudosa.musinsa.order.domain.model.OrderProduct;
 import com.mudosa.musinsa.order.domain.repository.OrderRepository;
 import com.mudosa.musinsa.payment.domain.model.Payment;
 import com.mudosa.musinsa.payment.domain.repository.PaymentRepository;
-import com.mudosa.musinsa.product.domain.model.ProductOption;
+import com.mudosa.musinsa.product.domain.model.*;
 import com.mudosa.musinsa.product.domain.repository.CartItemRepository;
 import com.mudosa.musinsa.product.domain.repository.ProductOptionRepository;
 import com.mudosa.musinsa.user.domain.model.User;
@@ -39,6 +40,7 @@ public class OrderService {
     private final ProductOptionRepository productOptionRepository;
     private final UserRepository userRepository;
     private final PaymentRepository paymentRepository;
+    private final OrderCacheService orderCacheService;
 
     @Observed(name = "order.create", contextualName = "주문-생성")
     @Transactional
@@ -63,6 +65,13 @@ public class OrderService {
 
         Order savedOrder = orderRepository.save(order);
 
+        //주문 데이터 캐싱
+        orderCacheService.cachePendingOrder(savedOrder.getOrderNo(), savedOrder);
+
+        //주문 상품 목록 캐싱
+        List<OrderItem> orderItems = buildOrderItems(optionsWithQuantity);
+        orderCacheService.cacheOrderItems(savedOrder.getOrderNo(), orderItems);
+
         return OrderCreateResponse.of(savedOrder.getId(), savedOrder.getOrderNo());
     }
 
@@ -70,11 +79,13 @@ public class OrderService {
     @Transactional(readOnly = true)
     public PendingOrderResponse fetchPendingOrder(String orderNo) {
         // 주문 조회
-        Order order = orderRepository.findByOrderNo(orderNo)
-                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+        Order order = orderCacheService.getPendingOrder(orderNo);
+        if (order == null) {
+            throw new BusinessException(ErrorCode.ORDER_NOT_FOUND);
+        }
 
         // 상품 목록 조회
-        List<OrderItem> orderProductsInfo = orderRepository.findOrderItems(orderNo);
+        List<OrderItem> orderProductsInfo = orderCacheService.getOrderItems(orderNo);
 
         return new PendingOrderResponse(
                 orderNo,
@@ -90,15 +101,18 @@ public class OrderService {
     @Observed(name = "order.detail.fetch", contextualName = "주문-상세조회")
     public OrderDetailResponse fetchOrderDetail(String orderNo) {
         // 주문 조회
-        Order order = orderRepository.findByOrderNo(orderNo)
-                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+        Order order = orderCacheService.getCompletedOrder(orderNo);
+
+        if (order == null) {
+            throw new BusinessException(ErrorCode.ORDER_NOT_FOUND);
+        }
 
         if(!order.canFetchDetail()){
             throw new BusinessException(ErrorCode.INVALID_ORDER_STATUS_TRANSITION);
         }
 
         // 상품 목록 조회
-        List<OrderItem> orderProductsInfo = orderRepository.findOrderItems(orderNo);
+        List<OrderItem> orderProductsInfo = orderCacheService.getOrderItems(orderNo);
 
         //결제 정보 조회
         Payment payment = paymentRepository.findByOrderId(order.getId()).orElseThrow(()->new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
@@ -168,94 +182,6 @@ public class OrderService {
         orderRepository.save(order);
 
         return order.getId();
-    }
-
-    @Observed(name = "order.deleteCartItems", contextualName = "장바구니-삭제")
-    public void deleteCartItems(Long orderId, Long userId) {
-        //주문 조회
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
-
-        //장바구니 삭제
-        List<Long> productOptionIds = order.getOrderProducts().stream()
-                .map(op -> op.getProductOption().getProductOptionId())
-                .toList();
-
-        cartItemRepository.deleteByUserIdAndProductOptionIdIn(
-                userId,
-                productOptionIds
-        );
-    }
-
-    @Observed(name = "order.rollback", contextualName = "주문-롤백")
-    @Transactional
-    public void rollbackOrder(Long orderId) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
-
-        for (OrderProduct orderProduct : order.getOrderProducts()) {
-            ProductOption productOption = productOptionRepository.findById(
-                    orderProduct.getProductOption().getProductOptionId()
-            ).orElseThrow();
-
-            productOption.restoreStock(orderProduct.getProductQuantity());
-        }
-
-        order.rollbackStatus();
-        orderRepository.save(order);
-    }
-
-
-    @Observed(name = "order.validateStock", contextualName = "재고-검증")
-    private void validateStock(Map<ProductOption, Integer> optionsWithQuantity) {
-        //재고 확인
-        List<InsufficientStockItem> insufficientItems = optionsWithQuantity.entrySet().stream()
-                .filter(entry -> !entry.getKey().hasEnoughStock(entry.getValue()))
-                .map(entry -> new InsufficientStockItem(
-                        entry.getKey().getProductOptionId(),
-                        entry.getValue(),
-                        entry.getKey().getStockQuantity()
-                ))
-                .toList();
-
-        if (!insufficientItems.isEmpty()) {
-            throw new BusinessException(ErrorCode.INSUFFICIENT_STOCK, insufficientItems);
-        }
-    }
-
-    @Observed(name = "order.mapProductOptions", contextualName = "상품옵션-매핑")
-    private Map<ProductOption, Integer> getProductOptionIntegerMap(OrderCreateRequest request) {
-        List<Long> optionIds = request.getItems().stream()
-                .map(OrderCreateItem::getProductOptionId)
-                .toList();
-
-        //상품 옵션 조회
-        List<ProductOption> productOptions =
-                productOptionRepository.findByProductOptionIdIn(optionIds);
-
-        //상품 옵션 Id 유효성 확인
-        if(productOptions.size() != optionIds.size()){
-            throw new BusinessException(ErrorCode.PRODUCT_OPTION_NOT_FOUND);
-        }
-
-        List<Long> list = productOptions.stream().filter(po -> !po.getProduct().getIsAvailable()).map(ProductOption::getProductOptionId).toList();
-
-        //주문 상품 유효성 확인
-        if(!list.isEmpty()){
-            throw new BusinessException(ErrorCode.INVALID_PRODUCT_ORDER, list);
-        }
-
-        Map<Long, Integer> quantityMap = request.getItems().stream()
-                .collect(Collectors.toMap(
-                        OrderCreateItem::getProductOptionId,
-                        OrderCreateItem::getQuantity
-                ));
-
-        return productOptions.stream()
-                .collect(Collectors.toMap(
-                        option -> option,
-                        option -> quantityMap.get(option.getProductOptionId())
-                ));
     }
 
     @Transactional
@@ -345,5 +271,138 @@ public class OrderService {
 
         order.rollbackToCompleted();
         orderRepository.save(order);
+    }
+
+    @Observed(name = "order.deleteCartItems", contextualName = "장바구니-삭제")
+    public Order deleteCartItems(Long orderId, Long userId) {
+        //주문 조회
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+
+        //장바구니 삭제
+        List<Long> productOptionIds = order.getOrderProducts().stream()
+                .map(op -> op.getProductOption().getProductOptionId())
+                .toList();
+
+        cartItemRepository.deleteByUserIdAndProductOptionIdIn(
+                userId,
+                productOptionIds
+        );
+
+        return order;
+    }
+
+    @Observed(name = "order.rollback", contextualName = "주문-롤백")
+    @Transactional
+    public void rollbackOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+
+        for (OrderProduct orderProduct : order.getOrderProducts()) {
+            ProductOption productOption = productOptionRepository.findById(
+                    orderProduct.getProductOption().getProductOptionId()
+            ).orElseThrow();
+
+            productOption.restoreStock(orderProduct.getProductQuantity());
+        }
+
+        order.rollbackStatus();
+        orderRepository.save(order);
+    }
+
+
+    @Observed(name = "order.validateStock", contextualName = "재고-검증")
+    private void validateStock(Map<ProductOption, Integer> optionsWithQuantity) {
+        //재고 확인
+        List<InsufficientStockItem> insufficientItems = optionsWithQuantity.entrySet().stream()
+                .filter(entry -> !entry.getKey().hasEnoughStock(entry.getValue()))
+                .map(entry -> new InsufficientStockItem(
+                        entry.getKey().getProductOptionId(),
+                        entry.getValue(),
+                        entry.getKey().getStockQuantity()
+                ))
+                .toList();
+
+        if (!insufficientItems.isEmpty()) {
+            throw new BusinessException(ErrorCode.INSUFFICIENT_STOCK, insufficientItems);
+        }
+    }
+
+    @Observed(name = "order.mapProductOptions", contextualName = "상품옵션-매핑")
+    private Map<ProductOption, Integer> getProductOptionIntegerMap(OrderCreateRequest request) {
+        List<Long> optionIds = request.getItems().stream()
+                .map(OrderCreateItem::getProductOptionId)
+                .toList();
+
+        //상품 옵션 조회
+        List<ProductOption> productOptions =
+                productOptionRepository.findByProductOptionIdIn(optionIds);
+
+        //상품 옵션 Id 유효성 확인
+        if(productOptions.size() != optionIds.size()){
+            throw new BusinessException(ErrorCode.PRODUCT_OPTION_NOT_FOUND);
+        }
+
+        List<Long> list = productOptions.stream().filter(po -> !po.getProduct().getIsAvailable()).map(ProductOption::getProductOptionId).toList();
+
+        //주문 상품 유효성 확인
+        if(!list.isEmpty()){
+            throw new BusinessException(ErrorCode.INVALID_PRODUCT_ORDER, list);
+        }
+
+        Map<Long, Integer> quantityMap = request.getItems().stream()
+                .collect(Collectors.toMap(
+                        OrderCreateItem::getProductOptionId,
+                        OrderCreateItem::getQuantity
+                ));
+
+        return productOptions.stream()
+                .collect(Collectors.toMap(
+                        option -> option,
+                        option -> quantityMap.get(option.getProductOptionId())
+                ));
+    }
+
+    private List<OrderItem> buildOrderItems(Map<ProductOption, Integer> optionsWithQuantity) {
+        return optionsWithQuantity.entrySet().stream()
+                .map(entry -> {
+                    ProductOption option = entry.getKey();
+                    Integer quantity = entry.getValue();
+                    Product product = option.getProduct();
+                    Brand brand = product.getBrand();
+
+                    String imageUrl = product.getImages().stream()
+                            .filter(Image::getIsThumbnail)
+                            .findFirst()
+                            .map(Image::getImageUrl)
+                            .orElse(null);
+
+                    String size = null;
+                    String color = null;
+                    for (ProductOptionValue pov : option.getProductOptionValues()) {
+                        String optionName = pov.getOptionValue().getOptionName();
+                        if (ValueName.SIZE.getName().equals(optionName)) {
+                            size = pov.getOptionValue().getOptionValue();
+                        } else if (ValueName.COLOR.getName().equals(optionName)) {
+                            color = pov.getOptionValue().getOptionValue();
+                        }
+                    }
+
+                    return new OrderItem(
+                            option.getProductOptionId(),
+                            brand.getNameKo(),
+                            product.getProductName(),
+                            option.getProductPrice().getAmount(),
+                            quantity,
+                            imageUrl,
+                            size,
+                            color
+                    );
+                })
+                .toList();
+    }
+
+    public void cacheCompletedOrder(Order order) {
+        orderCacheService.cacheCompletedOrder(order.getOrderNo(), order);
     }
 }

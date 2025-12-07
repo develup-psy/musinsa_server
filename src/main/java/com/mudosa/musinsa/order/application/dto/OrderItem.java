@@ -2,10 +2,12 @@ package com.mudosa.musinsa.order.application.dto;
 
 import com.querydsl.core.annotations.QueryProjection;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
 @Getter
+@NoArgsConstructor
 public class OrderItem {
     Long productOptionId;
     String brandName;
