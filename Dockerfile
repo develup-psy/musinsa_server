@@ -47,7 +47,9 @@ ENTRYPOINT ["java", \
     "-Duser.timezone=Asia/Seoul", \
     "-Dfile.encoding=UTF-8", \
     "-Djava.security.egd=file:/dev/./urandom", \
-    "-XX:+UseContainerSupport", \
     "-XX:MaxRAMPercentage=75.0", \
+    "-XX:+UseG1GC", \
+    "-XX:+HeapDumpOnOutOfMemoryError", \
+    "-XX:HeapDumpPath=/var/log/app/heapdump.hprof", \
     "-jar", \
     "app.jar"]

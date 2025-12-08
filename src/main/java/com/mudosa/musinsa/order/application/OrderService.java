@@ -11,6 +11,7 @@ import com.mudosa.musinsa.order.application.dto.response.OrderInfo;
 import com.mudosa.musinsa.order.application.dto.response.OrderListResponse;
 import com.mudosa.musinsa.order.domain.model.Order;
 import com.mudosa.musinsa.order.domain.model.OrderProduct;
+import com.mudosa.musinsa.order.domain.model.OrderStatus;
 import com.mudosa.musinsa.order.domain.repository.OrderRepository;
 import com.mudosa.musinsa.payment.domain.model.Payment;
 import com.mudosa.musinsa.payment.domain.repository.PaymentRepository;
@@ -66,7 +67,7 @@ public class OrderService {
         Order savedOrder = orderRepository.save(order);
 
         //주문 데이터 캐싱
-        orderCacheService.cachePendingOrder(savedOrder.getOrderNo(), savedOrder);
+        orderCacheService.cacheOrder(savedOrder.getOrderNo(), savedOrder);
 
         //주문 상품 목록 캐싱
         List<OrderItem> orderItems = buildOrderItems(optionsWithQuantity);
@@ -79,7 +80,7 @@ public class OrderService {
     @Transactional(readOnly = true)
     public PendingOrderResponse fetchPendingOrder(String orderNo) {
         // 주문 조회
-        Order order = orderCacheService.getPendingOrder(orderNo);
+        OrderCacheData order = orderCacheService.getOrder(orderNo);
         if (order == null) {
             throw new BusinessException(ErrorCode.ORDER_NOT_FOUND);
         }
@@ -89,8 +90,8 @@ public class OrderService {
 
         return new PendingOrderResponse(
                 orderNo,
-                order.getTotalPrice().getAmount(),
-                order.getTotalDiscount().getAmount(),
+                order.getTotalPrice(),
+                order.getTotalDiscount(),
                 orderProductsInfo,
                 order.getShippingName(),
                 order.getShippingAddress(),
@@ -101,7 +102,7 @@ public class OrderService {
     @Observed(name = "order.detail.fetch", contextualName = "주문-상세조회")
     public OrderDetailResponse fetchOrderDetail(String orderNo) {
         // 주문 조회
-        Order order = orderCacheService.getCompletedOrder(orderNo);
+        OrderCacheData order = orderCacheService.getOrder(orderNo);
 
         if (order == null) {
             throw new BusinessException(ErrorCode.ORDER_NOT_FOUND);
@@ -115,13 +116,13 @@ public class OrderService {
         List<OrderItem> orderProductsInfo = orderCacheService.getOrderItems(orderNo);
 
         //결제 정보 조회
-        Payment payment = paymentRepository.findByOrderId(order.getId()).orElseThrow(()->new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
+        Payment payment = paymentRepository.findByOrderId(order.getOrderId()).orElseThrow(()->new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
 
         return OrderDetailResponse.builder()
                 .orderNo(order.getOrderNo())
                 .orderStatus(order.getStatus())
-                .totalProductAmount(order.getTotalPrice().getAmount())
-                .discountAmount(order.getTotalDiscount().getAmount())
+                .totalProductAmount(order.getTotalPrice())
+                .discountAmount(order.getTotalDiscount())
                 .orderedAt(order.getRegisteredAt())
                 .userName(order.getShippingName())
                 .userAddress(order.getShippingAddress())
@@ -240,7 +241,7 @@ public class OrderService {
 
 
     @Observed(name = "order.cancel", contextualName = "주문-취소")
-    public void cancelOrder(Long orderId) {
+    public Order cancelOrder(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
 
@@ -253,11 +254,11 @@ public class OrderService {
         }
 
         order.cancel();
-        orderRepository.save(order);
+        return orderRepository.save(order);
     }
 
     @Observed(name = "order.rollbackCancel", contextualName = "주문-취소-롤백")
-    public void rollbackOrderCancel(Long orderId) {
+    public Order rollbackOrderCancel(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
 
@@ -270,7 +271,7 @@ public class OrderService {
         }
 
         order.rollbackToCompleted();
-        orderRepository.save(order);
+        return orderRepository.save(order);
     }
 
     @Observed(name = "order.deleteCartItems", contextualName = "장바구니-삭제")
@@ -294,7 +295,7 @@ public class OrderService {
 
     @Observed(name = "order.rollback", contextualName = "주문-롤백")
     @Transactional
-    public void rollbackOrder(Long orderId) {
+    public Order rollbackOrder(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
 
@@ -307,7 +308,8 @@ public class OrderService {
         }
 
         order.rollbackStatus();
-        orderRepository.save(order);
+
+        return orderRepository.save(order);
     }
 
 
@@ -402,7 +404,7 @@ public class OrderService {
                 .toList();
     }
 
-    public void cacheCompletedOrder(Order order) {
-        orderCacheService.cacheCompletedOrder(order.getOrderNo(), order);
+    public void updateOrderStatusCache(String orderNo, OrderStatus status) {
+        orderCacheService.updateOrderStatus(orderNo, status);
     }
 }

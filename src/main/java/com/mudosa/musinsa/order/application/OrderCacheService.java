@@ -2,8 +2,10 @@ package com.mudosa.musinsa.order.application;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
+import com.mudosa.musinsa.order.application.dto.OrderCacheData;
 import com.mudosa.musinsa.order.application.dto.OrderItem;
 import com.mudosa.musinsa.order.domain.model.Order;
+import com.mudosa.musinsa.order.domain.model.OrderStatus;
 import com.mudosa.musinsa.order.domain.repository.OrderRepository;
 import io.micrometer.observation.annotation.Observed;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +14,9 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -20,81 +24,97 @@ import java.util.List;
 public class OrderCacheService {
 
     private final OrderRepository orderRepository;
-    private final Cache<String, Order> pendingOrderLocalCache;
-    private final Cache<String, Order> completedOrderLocalCache;
+    private final Cache<String, OrderCacheData> orderLocalCache;
     private final Cache<String, List<OrderItem>> orderItemsLocalCache;
-
     private final RedisTemplate<String, Object> redisTemplate;
+
+    private static final String ORDER_KEY = "order:";
+    private static final String ORDER_ITEMS_KEY = "orderItems:";
+
     private final ObjectMapper objectMapper;
 
-    private static final String PENDING_ORDER_KEY = "pendingOrder:";
-    private static final String COMPLETED_ORDER_KEY = "completedOrder:";
-    private static final String ORDER_ITEMS_KEY = "orderItems:";
+    // Redis Hash 필드명
+    private static final String FIELD_DATA = "data";
+    private static final String FIELD_STATUS = "status";
 
     private static final Duration ORDER_TTL = Duration.ofMinutes(5);
     private static final Duration ORDER_ITEMS_TTL = Duration.ofMinutes(30);
 
-    /* 주문서 조회 캐싱 조회 */
+    /* 주문 캐시 조회  */
     @Observed(name = "cache.pendingOrder.get", contextualName = "주문서-주문-캐시조회")
-    public Order getPendingOrder(String orderNo) {
+    public OrderCacheData getOrder(String orderNo) {
         // 로컬 캐시
-        Order localCached = pendingOrderLocalCache.getIfPresent(orderNo);
+        OrderCacheData localCached = orderLocalCache.getIfPresent(orderNo);
         if (localCached != null) {
             log.info("주문서 주문 로컬 캐시 히트: {}", orderNo);
             return localCached;
         }
 
         // Redis 캐시
-        Object redisCached = redisTemplate.opsForValue().get(PENDING_ORDER_KEY + orderNo);
-        if (redisCached != null) {
-            Order order = objectMapper.convertValue(redisCached, Order.class);
-            pendingOrderLocalCache.put(orderNo, order);
-            log.info("주문서 주문 Redis 캐시 히트: {}", orderNo);
-            return order;
+        Map<Object, Object> redisData = redisTemplate.opsForHash().entries(ORDER_KEY + orderNo);
+        if (!redisData.isEmpty()) {
+            OrderCacheData cacheData = convertFromRedisHash(redisData);
+            orderLocalCache.put(orderNo, cacheData);
+            log.info("주문 Redis 캐시 히트: {}", orderNo);
+            return cacheData;
         }
 
         // DB 조회
-        log.info("주문서 주문 DB 조회: {}", orderNo);
-        return orderRepository.findByOrderNo(orderNo).orElse(null);
+        log.info("주문 DB 조회: {}", orderNo);
+        return orderRepository.findByOrderNo(orderNo)
+                .map(OrderCacheData::from)
+                .orElse(null);
     }
 
-    /* 주문서 조회용 주문 데이터 캐시 */
-    public void cachePendingOrder(String orderNo, Order order) {
-        pendingOrderLocalCache.put(orderNo, order);
-        redisTemplate.opsForValue().set(PENDING_ORDER_KEY + orderNo, order, ORDER_TTL);
-        log.info("주문서 조회 캐시 저장: {}", orderNo);
+    /* 주문 캐시 */
+    @Observed(name = "cache.order.put", contextualName = "주문-캐시저장")
+    public void cacheOrder(String orderNo, Order order) {
+        OrderCacheData cacheData = OrderCacheData.from(order);
+
+        // 로컬 캐시
+        orderLocalCache.put(orderNo, cacheData);
+
+        // Redis Hash 저장
+        String redisKey = ORDER_KEY + orderNo;
+        redisTemplate.opsForHash().put(redisKey, FIELD_DATA, cacheData);
+        redisTemplate.opsForHash().put(redisKey, FIELD_STATUS, cacheData.getStatus().name());
+        redisTemplate.expire(redisKey, ORDER_TTL);
+
+        log.info("주문 캐시 저장: {}", orderNo);
     }
 
-    /* 상세 조회용 캐시 조회 */
-    @Observed(name = "cache.completedOrder.get", contextualName = "상세-주문-캐시조회")
-    public Order getCompletedOrder(String orderNo) {
-        // 로컬 캐시 조회
-        Order localCached = completedOrderLocalCache.getIfPresent(orderNo);
+    /* 주문 상태 변경 */
+    @Observed(name = "cache.order.updateStatus", contextualName = "주문-상태-업데이트")
+    public void updateOrderStatus(String orderNo, OrderStatus newStatus) {
+        OrderCacheData localCached = orderLocalCache.getIfPresent(orderNo);
         if (localCached != null) {
-            log.info("상세 주문 로컬 캐시 히트: {}", orderNo);
-            return localCached;
+            orderLocalCache.put(orderNo, localCached.withStatus(newStatus));
+            log.info("로컬 캐시 상태 업데이트: {} → {}", orderNo, newStatus);
         }
 
-        // Redis 캐시 조회
-        Object redisCached = redisTemplate.opsForValue().get(COMPLETED_ORDER_KEY + orderNo);
-        if (redisCached != null) {
-            Order order = objectMapper.convertValue(redisCached, Order.class);
-            completedOrderLocalCache.put(orderNo, order);
-            log.info("상세 주문 Redis 캐시 히트: {}", orderNo);
-            return order;
+        String redisKey = ORDER_KEY + orderNo;
+
+        Object dataObj = redisTemplate.opsForHash().get(redisKey, FIELD_DATA);
+
+        if (dataObj != null) {
+            try {
+                OrderCacheData existingData = objectMapper.convertValue(dataObj, OrderCacheData.class);
+
+                OrderCacheData updatedData = existingData.withStatus(newStatus);
+
+                Map<String, Object> updates = new HashMap<>();
+                updates.put(FIELD_STATUS, newStatus.name());
+                updates.put(FIELD_DATA, updatedData);
+
+                redisTemplate.opsForHash().putAll(redisKey, updates);
+
+                log.info("Redis 캐시 상태 업데이트: {} → {}", orderNo, newStatus);
+            } catch (IllegalArgumentException e) {
+                log.error("Redis 데이터 역직렬화 오류 발생: {}", orderNo, e);
+            }
+        } else {
+            log.warn("Redis에서 주문 데이터를 찾을 수 없어 업데이트를 건너뜁니다: {}", orderNo);
         }
-
-        // DB 조회
-        log.info("상세 주문 DB 조회: {}", orderNo);
-        return orderRepository.findByOrderNo(orderNo).orElse(null);
-    }
-
-    /* 상세조회용 주문 데이터 캐시 */
-    @Observed(name = "cache.completedOrder.put", contextualName = "상세-주문-캐시저장")
-    public void cacheCompletedOrder(String orderNo, Order order) {
-        completedOrderLocalCache.put(orderNo, order);
-        redisTemplate.opsForValue().set(COMPLETED_ORDER_KEY + orderNo, order, ORDER_TTL);
-        log.info("상세 주문 캐시 저장: {}", orderNo);
     }
 
     /* 상품 목록 캐시 조회 */
@@ -109,9 +129,9 @@ public class OrderCacheService {
 
         // Redis 캐시
         Object redisCached = redisTemplate.opsForValue().get(ORDER_ITEMS_KEY + orderNo);
-        if (redisCached != null) {
-            List<OrderItem> items = objectMapper.convertValue(redisCached,
-                    objectMapper.getTypeFactory().constructCollectionType(List.class, OrderItem.class));
+        if (redisCached instanceof List<?> list) {
+            @SuppressWarnings("unchecked")
+            List<OrderItem> items = (List<OrderItem>) list;
             orderItemsLocalCache.put(orderNo, items);
             log.info("상품목록 Redis 캐시 히트: {}", orderNo);
             return items;
@@ -129,5 +149,32 @@ public class OrderCacheService {
         orderItemsLocalCache.put(orderNo, items);
         redisTemplate.opsForValue().set(ORDER_ITEMS_KEY + orderNo, items, ORDER_ITEMS_TTL);
         log.info("상품목록 캐시 저장: {}", orderNo);
+    }
+
+    private OrderCacheData convertFromRedisHash(Map<Object, Object> redisData) {
+        Object dataObj = redisData.get(FIELD_DATA);
+
+        if (dataObj == null) {
+            return null;
+        }
+
+        try {
+            OrderCacheData cacheData = objectMapper.convertValue(dataObj, OrderCacheData.class);
+
+            // 상태값 동기화 로직은 그대로 유지
+            Object statusObj = redisData.get(FIELD_STATUS);
+            if (statusObj != null) {
+                // Enum 값 변환 시 toString()이 안전함
+                OrderStatus status = OrderStatus.valueOf(statusObj.toString());
+                if (cacheData.getStatus() != status) {
+                    return cacheData.withStatus(status);
+                }
+            }
+            return cacheData;
+
+        } catch (IllegalArgumentException e) {
+            log.error("Redis Hash 데이터를 OrderCacheData로 변환 실패", e);
+            return null;
+        }
     }
 }

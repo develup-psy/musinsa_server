@@ -7,6 +7,13 @@ spring:
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
       database: 0
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 50
+          max-idle: 50
+          min-idle: 10
+          max-wait: 3000ms
   
   application:
     name: musinsa-server
