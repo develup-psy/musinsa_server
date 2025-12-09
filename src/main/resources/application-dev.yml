@@ -67,14 +67,14 @@ management:
   endpoint:
     metrics:
       enabled: true
-  tracing:
-    enabled: true
-    sampling:
-      probability: 0.01
-
-  otlp:
-    tracing:
-      endpoint: http://172.31.22.88:4318/v1/traces
+#  tracing:
+#    enabled: true
+#    sampling:
+#      probability: 0.01
+#
+#  otlp:
+#    tracing:
+#      endpoint: http://172.31.22.88:4318/v1/traces
 
 
 logging:
@@ -88,3 +88,4 @@ logging:
       springframework.transaction: error
       springframework.web.client.RestTemplate: error
       com.mudosa.musinsa.common.client: error
+    root: warn

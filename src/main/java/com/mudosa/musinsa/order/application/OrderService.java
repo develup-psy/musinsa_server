@@ -16,6 +16,7 @@ import com.mudosa.musinsa.order.domain.model.OrderStatus;
 import com.mudosa.musinsa.order.domain.repository.OrderRepository;
 import com.mudosa.musinsa.payment.domain.model.Payment;
 import com.mudosa.musinsa.payment.domain.repository.PaymentRepository;
+import com.mudosa.musinsa.product.application.InventoryService;
 import com.mudosa.musinsa.product.domain.model.*;
 import com.mudosa.musinsa.product.domain.repository.CartItemRepository;
 import com.mudosa.musinsa.product.domain.repository.ProductOptionRepository;
@@ -43,6 +44,7 @@ public class OrderService {
     private final UserRepository userRepository;
     private final PaymentRepository paymentRepository;
     private final OrderCacheService orderCacheService;
+    private final InventoryService inventoryService;
 
     @Observed(name = "order.create", contextualName = "주문-생성")
     @Transactional
@@ -140,12 +142,21 @@ public class OrderService {
     }
 
     @Observed(name = "order.complete", contextualName = "주문-완료")
-    @DistributedMultiLock(keys = "#optionIds")
     @Transactional
     public Long completeOrder(String orderNo) {
         //주문 조회
         Order order = orderRepository.findByOrderNo(orderNo)
             .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+
+        List<OrderItem> cacheData = orderCacheService.getOrderItems(orderNo);
+
+        if (cacheData == null) {
+            throw new BusinessException(ErrorCode.ORDER_NOT_FOUND);
+        }
+
+        List<Long> optionIds = cacheData.stream()
+                .map(OrderItem::getProductOptionId)
+                .toList();
 
         Map<Long, Integer> quantityMap = order.getOrderProducts().stream()
                 .collect(Collectors.toMap(
@@ -153,33 +164,8 @@ public class OrderService {
                         OrderProduct::getProductQuantity
                 ));
 
-        //재고 차감
-        List<Long> optionIds = new ArrayList<>(quantityMap.keySet());
-
         //일반 조회
-        List<ProductOption> productOptions = productOptionRepository.findByProductOptionIdIn(optionIds);
-
-        List<InsufficientStockItem> insufficientItems = new ArrayList<>();
-
-        productOptions.forEach(po -> {
-            Integer quantityToDeduct = quantityMap.get(po.getProductOptionId());
-            if (!po.hasEnoughStock(quantityToDeduct)) {
-                insufficientItems.add(new InsufficientStockItem(
-                        po.getProductOptionId(),
-                        quantityToDeduct,
-                        po.getStockQuantity()
-                ));
-            } else {
-                po.decreaseStock(quantityToDeduct);
-            }
-        });
-
-        if (!insufficientItems.isEmpty()) {
-            throw new BusinessException(
-                    ErrorCode.INSUFFICIENT_STOCK,
-                    insufficientItems
-            );
-        }
+        inventoryService.decreaseStock(optionIds, quantityMap);
 
         //주문 상태 변경
         order.complete();

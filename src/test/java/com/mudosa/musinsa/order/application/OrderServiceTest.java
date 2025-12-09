@@ -193,10 +193,8 @@ class OrderServiceTest extends ServiceConfig {
         orderProducts.forEach(op -> op.setOrderForTest(order));
         orderRepository.save(order);
 
-        List<Long> orderIds = orderProducts.stream().map(OrderProduct::getProductOptionId).toList();
-
         //when
-        orderService.completeOrder(orderNo, orderIds);
+        orderService.completeOrder(orderNo);
 
         //then
         Order result = orderRepository.findByOrderNo(orderNo).orElseThrow();
@@ -225,9 +223,7 @@ class OrderServiceTest extends ServiceConfig {
         orderRepository.save(order);
 
         //when
-        List<Long> orderIds = orderProducts.stream().map(OrderProduct::getProductOptionId).toList();
-        orderService.completeOrder(testOrderNo, orderIds);
-
+        orderService.completeOrder(testOrderNo);
         //then
         Inventory result = inventoryRepository.findById(inventory.getInventoryId()).orElseThrow();
         assertThat(result.getStockQuantity().getValue()).isEqualTo(5);
@@ -256,8 +252,7 @@ class OrderServiceTest extends ServiceConfig {
 
         //when & then
 
-        List<Long> orderIds = orderProducts.stream().map(OrderProduct::getProductOptionId).toList();
-        BusinessException thrown = catchThrowableOfType(() -> orderService.completeOrder(testOrderNo, orderIds), BusinessException.class);
+        BusinessException thrown = catchThrowableOfType(() -> orderService.completeOrder(testOrderNo), BusinessException.class);
 
         assertThat(thrown).isNotNull();
         assertThat(thrown.getMessage()).contains("부족");
@@ -309,7 +304,7 @@ class OrderServiceTest extends ServiceConfig {
             final String orderNo = orderNos.get(i);
             executorService.submit(() -> {
                 try {
-                    orderService.completeOrder(orderNo, null);
+                    orderService.completeOrder(orderNo);
                 } catch (Exception e) {
                     log.error("동시성 테스트 중 예외 발생", e);
                 } finally {

@@ -130,8 +130,10 @@ public class OrderCacheService {
         // Redis 캐시
         Object redisCached = redisTemplate.opsForValue().get(ORDER_ITEMS_KEY + orderNo);
         if (redisCached instanceof List<?> list) {
-            @SuppressWarnings("unchecked")
-            List<OrderItem> items = (List<OrderItem>) list;
+            List<OrderItem> items = list.stream()
+                    .map(item -> objectMapper.convertValue(item, OrderItem.class))
+                    .toList();
+
             orderItemsLocalCache.put(orderNo, items);
             log.info("상품목록 Redis 캐시 히트: {}", orderNo);
             return items;
