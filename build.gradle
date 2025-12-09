@@ -70,6 +70,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-cache'
     implementation 'com.github.ben-manes.caffeine:caffeine'
 
+    // reddison
+    implementation 'org.redisson:redisson-spring-boot-starter:3.27.0'
+
     // Swagger (SpringDoc OpenAPI)
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
 

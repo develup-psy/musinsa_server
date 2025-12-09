@@ -1,6 +1,7 @@
 package com.mudosa.musinsa.order.application;
 
 import com.mudosa.musinsa.brand.domain.model.Brand;
+import com.mudosa.musinsa.common.lock.DistributedMultiLock;
 import com.mudosa.musinsa.exception.BusinessException;
 import com.mudosa.musinsa.exception.ErrorCode;
 import com.mudosa.musinsa.order.application.dto.*;
@@ -139,6 +140,7 @@ public class OrderService {
     }
 
     @Observed(name = "order.complete", contextualName = "주문-완료")
+    @DistributedMultiLock(keys = "#optionIds")
     @Transactional
     public Long completeOrder(String orderNo) {
         //주문 조회
@@ -154,7 +156,8 @@ public class OrderService {
         //재고 차감
         List<Long> optionIds = new ArrayList<>(quantityMap.keySet());
 
-        List<ProductOption> productOptions = productOptionRepository.findByProductOptionIdInWithPessimisticLock(optionIds);
+        //일반 조회
+        List<ProductOption> productOptions = productOptionRepository.findByProductOptionIdIn(optionIds);
 
         List<InsufficientStockItem> insufficientItems = new ArrayList<>();
 
@@ -184,6 +187,8 @@ public class OrderService {
 
         return order.getId();
     }
+
+
 
     @Transactional
     public void cancelPendingOrder(String orderNo) {

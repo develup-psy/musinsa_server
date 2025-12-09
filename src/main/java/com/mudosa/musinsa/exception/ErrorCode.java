@@ -58,6 +58,7 @@ public enum ErrorCode {
   ORDER_CREATE_FAIL("40010","주문 생성에 실패했습니다", HttpStatus.BAD_REQUEST),
   INVALID_PRODUCT_ORDER("40011","현재 판매 불가능한 상품이 포함되어 있습니다",HttpStatus.BAD_REQUEST ),
   CANNOT_CANCEL_ORDER("40012","취소할 수 없는 주문입니다",HttpStatus.BAD_REQUEST ),
+  LOCK_ACQUISITION("40013","분산 락을 획득에 실패했습니다",HttpStatus.CONFLICT ),
 
   //inventory
   INVENTORY_NOT_FOUND("50001", "재고 정보를 찾을 수 없습니다", HttpStatus.NOT_FOUND),

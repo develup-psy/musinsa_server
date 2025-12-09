@@ -2,6 +2,7 @@ package com.mudosa.musinsa.payment.application.service;
 
 import com.mudosa.musinsa.exception.BusinessException;
 import com.mudosa.musinsa.exception.ErrorCode;
+import com.mudosa.musinsa.order.application.OrderCompleteFacade;
 import com.mudosa.musinsa.order.application.OrderService;
 import com.mudosa.musinsa.order.domain.model.Order;
 import com.mudosa.musinsa.payment.application.dto.PaymentCreateDto;
@@ -25,15 +26,19 @@ import java.time.LocalDateTime;
 public class PaymentConfirmService {
 
     private final OrderService orderService;
+    private final OrderCompleteFacade orderCompleteFacade;
     private final PaymentRepository paymentRepository;
 
     @Observed(name = "payment.transaction.create", contextualName = "결제-트랜잭션-생성")
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     protected PaymentCreationResult createPaymentTransaction(PaymentCreateDto request, Long userId) {
         // 주문 완료(재고 차감, 주문 상태 변경)
-        Long orderId = orderService.completeOrder(
-                request.getOrderNo()
-        );
+//        Long orderId =
+//                orderCompleteFacade.completeOrder(
+//                request.getOrderNo()
+//        );
+
+        Long orderId = orderService.completeOrder(request.getOrderNo());
 
         // 결제 생성
         Payment payment = Payment.create(
