@@ -59,9 +59,6 @@ public class PaymentConfirmService {
         //장바구니 삭제
         Order order = orderService.deleteCartItems(orderId, userId);
 
-        // 주문 데이터 캐싱
-        orderService.updateOrderStatusCache(order.getOrderNo(), order.getStatus());
-
         //결제 조회
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
@@ -78,9 +75,7 @@ public class PaymentConfirmService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void failPayment(Long paymentId, String errorMessage, Long userId, Long orderId) {
         //주문 및 재고 롤백
-        Order order = orderService.rollbackOrder(orderId);
-
-        orderService.updateOrderStatusCache(order.getOrderNo(), order.getStatus());
+        orderService.rollbackOrder(orderId);
 
         //결제 상태 변경
         Payment payment = paymentRepository.findById(paymentId)
@@ -115,8 +110,6 @@ public class PaymentConfirmService {
 
         //주문 관련 원복
         Order order = orderService.cancelOrder(payment.getOrderId());
-
-        orderService.updateOrderStatusCache(order.getOrderNo(), order.getStatus());
     }
 
     @Observed(name = "payment.cancelFail", contextualName = "결제-취소실패")
@@ -128,7 +121,5 @@ public class PaymentConfirmService {
 
         //주문 및 재고 롤백
         Order order = orderService.rollbackOrderCancel(payment.getOrderId());
-
-        orderService.updateOrderStatusCache(order.getOrderNo(), order.getStatus());
     }
 }

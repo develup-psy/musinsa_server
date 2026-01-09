@@ -123,12 +123,4 @@ public class SecurityConfig {
     source.registerCorsConfiguration("/**", config);
     return source;
   }
-
-  @Bean
-  public ObservationRegistryCustomizer<ObservationRegistry>
-  disableSecurityObservations() {
-    return registry -> registry.observationConfig()
-            .observationPredicate((name, context) ->
-                    !name.startsWith("spring.security"));
-  }
 }

@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 public enum ErrorCode {
 
   INVALID_PARAMETER("00001","파라미터가 유효하지 않습니다",HttpStatus.BAD_REQUEST ),
+  SERVICE_UNAVAILABLE("00002","서비스를 이용할 수 없습니다",HttpStatus.CONFLICT ),
 
   // auth
   VALIDATION_ERROR("10001", "입력 값 검증 오류입니다.", HttpStatus.BAD_REQUEST),

@@ -5,26 +5,25 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     hikari:
-      maximum-pool-size: 200
-      minimum-idle: 50
-
-      connection-timeout: 20000 #20초
-      max-lifetime: 270000 #4.5분
-      keepalive-time: 240000 #4분
+      maximum-pool-size: ${HIKARI_MAX_POOL_SIZE:200}
+      minimum-idle: ${HIKARI_MIN_IDLE:50}
+      connection-timeout: ${HIKARI_CONNECTION_TIMEOUT:20000}
+      max-lifetime: ${HIKARI_MAX_LIFETIME:270000}
+      keepalive-time: ${HIKARI_KEEPALIVE_TIME:240000}
 
       register-mbeans: true
-  security:
-    observability:
-      filter:
-        enabled: false
 
   jpa:
-    open-in-view: false
+    open-in-view: ${OPEN_IN_VIEW_ENABLED:false}
     hibernate:
       ddl-auto: none
 
   jmx:
     enabled: true
+
+#  threads:
+#    virtual:
+#      enabled: true
 
 tosspayments:
   secret-key: test_gsk_docs_OaPz8L5KdmQXkzRz3y47BMw6
@@ -47,13 +46,13 @@ server:
   port: 8080
   address: 0.0.0.0
   tomcat:
-    max-threads: 300
-    max-connections: 10000
-    accept-count: 4096
+    max-threads: ${TOMCAT_MAX_THREADS:300}
+    max-connections: ${TOMCAT_MAX_CONNECTIONS:10000}
+    accept-count: ${TOMCAT_ACCEPT_COUNT:4096}
 
 management:
   server:
-    port: 8080
+    port: ${SERVER_PORT:8080}
   endpoints:
     web:
       exposure:
@@ -64,17 +63,21 @@ management:
       cache: true
     cache:
       instrument: true
+  observations:
+    enable:
+      spring:
+        security: ${OBSERVABILITY_ENABLED:true}
   endpoint:
     metrics:
       enabled: true
-#  tracing:
-#    enabled: true
-#    sampling:
-#      probability: 0.01
-#
-#  otlp:
-#    tracing:
-#      endpoint: http://172.31.22.88:4318/v1/traces
+  tracing:
+    enabled: ${TRACING_ENABLED:true}
+    sampling:
+      probability: ${TRACING_SAMPLING_PROBABILITY:0.01}
+
+  otlp:
+    tracing:
+      endpoint: ${OTLP_TRACING_ENDPOINT:http://172.31.19.50:4318/v1/traces}
 
 
 logging:
@@ -88,4 +91,4 @@ logging:
       springframework.transaction: error
       springframework.web.client.RestTemplate: error
       com.mudosa.musinsa.common.client: error
-    root: warn
+    root: ${LOG_LEVEL_ROOT:warn}

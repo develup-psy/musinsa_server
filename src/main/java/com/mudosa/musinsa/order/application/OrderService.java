@@ -69,9 +69,6 @@ public class OrderService {
 
         Order savedOrder = orderRepository.save(order);
 
-        //주문 데이터 캐싱
-        orderCacheService.cacheOrder(savedOrder.getOrderNo(), savedOrder);
-
         //주문 상품 목록 캐싱
         List<OrderItem> orderItems = buildOrderItems(optionsWithQuantity);
         orderCacheService.cacheOrderItems(savedOrder.getOrderNo(), orderItems);
@@ -83,7 +80,8 @@ public class OrderService {
     @Transactional(readOnly = true)
     public PendingOrderResponse fetchPendingOrder(String orderNo) {
         // 주문 조회
-        OrderCacheData order = orderCacheService.getOrder(orderNo);
+        Order order = orderRepository.findByOrderNo(orderNo).orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+
         if (order == null) {
             throw new BusinessException(ErrorCode.ORDER_NOT_FOUND);
         }
@@ -93,8 +91,8 @@ public class OrderService {
 
         return new PendingOrderResponse(
                 orderNo,
-                order.getTotalPrice(),
-                order.getTotalDiscount(),
+                order.getTotalPrice().getAmount(),
+                order.getTotalDiscount().getAmount(),
                 orderProductsInfo,
                 order.getShippingName(),
                 order.getShippingAddress(),
@@ -105,7 +103,7 @@ public class OrderService {
     @Observed(name = "order.detail.fetch", contextualName = "주문-상세조회")
     public OrderDetailResponse fetchOrderDetail(String orderNo) {
         // 주문 조회
-        OrderCacheData order = orderCacheService.getOrder(orderNo);
+        Order order = orderRepository.findByOrderNo(orderNo).orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
 
         if (order == null) {
             throw new BusinessException(ErrorCode.ORDER_NOT_FOUND);
@@ -119,13 +117,13 @@ public class OrderService {
         List<OrderItem> orderProductsInfo = orderCacheService.getOrderItems(orderNo);
 
         //결제 정보 조회
-        Payment payment = paymentRepository.findByOrderId(order.getOrderId()).orElseThrow(()->new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
+        Payment payment = paymentRepository.findByOrderId(order.getId()).orElseThrow(()->new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
 
         return OrderDetailResponse.builder()
                 .orderNo(order.getOrderNo())
                 .orderStatus(order.getStatus())
-                .totalProductAmount(order.getTotalPrice())
-                .discountAmount(order.getTotalDiscount())
+                .totalProductAmount(order.getTotalPrice().getAmount())
+                .discountAmount(order.getTotalDiscount().getAmount())
                 .orderedAt(order.getRegisteredAt())
                 .userName(order.getShippingName())
                 .userAddress(order.getShippingAddress())
@@ -305,7 +303,7 @@ public class OrderService {
 
 
     @Observed(name = "order.validateStock", contextualName = "재고-검증")
-    private void validateStock(Map<ProductOption, Integer> optionsWithQuantity) {
+    public void validateStock(Map<ProductOption, Integer> optionsWithQuantity) {
         //재고 확인
         List<InsufficientStockItem> insufficientItems = optionsWithQuantity.entrySet().stream()
                 .filter(entry -> !entry.getKey().hasEnoughStock(entry.getValue()))
@@ -322,7 +320,7 @@ public class OrderService {
     }
 
     @Observed(name = "order.mapProductOptions", contextualName = "상품옵션-매핑")
-    private Map<ProductOption, Integer> getProductOptionIntegerMap(OrderCreateRequest request) {
+    public Map<ProductOption, Integer> getProductOptionIntegerMap(OrderCreateRequest request) {
         List<Long> optionIds = request.getItems().stream()
                 .map(OrderCreateItem::getProductOptionId)
                 .toList();
@@ -356,6 +354,7 @@ public class OrderService {
                 ));
     }
 
+    @Observed(name = "order.buildOrderItems", contextualName = "캐싱 주문 목록 매핑")
     private List<OrderItem> buildOrderItems(Map<ProductOption, Integer> optionsWithQuantity) {
         return optionsWithQuantity.entrySet().stream()
                 .map(entry -> {
@@ -393,9 +392,5 @@ public class OrderService {
                     );
                 })
                 .toList();
-    }
-
-    public void updateOrderStatusCache(String orderNo, OrderStatus status) {
-        orderCacheService.updateOrderStatus(orderNo, status);
     }
 }
