@@ -2,10 +2,7 @@ package com.mudosa.musinsa.order.application;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
-import com.mudosa.musinsa.order.application.dto.OrderCacheData;
 import com.mudosa.musinsa.order.application.dto.OrderItem;
-import com.mudosa.musinsa.order.domain.model.Order;
-import com.mudosa.musinsa.order.domain.model.OrderStatus;
 import com.mudosa.musinsa.order.domain.repository.OrderRepository;
 import io.micrometer.observation.annotation.Observed;
 import lombok.RequiredArgsConstructor;
@@ -14,9 +11,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @Service

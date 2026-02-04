@@ -50,7 +50,7 @@ public class OrderService {
     @Transactional
     public OrderCreateResponse createPendingOrder(OrderCreateRequest request, Long userId) {
 
-        //ProductOption 매핑 & 주문 상품 유효성 확인
+        //ProductOption 매핑
         Map<ProductOption, Integer> optionsWithQuantity = getProductOptionIntegerMap(request);
 
         //재고 확인
@@ -329,16 +329,9 @@ public class OrderService {
         List<ProductOption> productOptions =
                 productOptionRepository.findByProductOptionIdIn(optionIds);
 
-        //상품 옵션 Id 유효성 확인
+        //상품 옵션의 유효성 확인
         if(productOptions.size() != optionIds.size()){
             throw new BusinessException(ErrorCode.PRODUCT_OPTION_NOT_FOUND);
-        }
-
-        List<Long> list = productOptions.stream().filter(po -> !po.getProduct().getIsAvailable()).map(ProductOption::getProductOptionId).toList();
-
-        //주문 상품 유효성 확인
-        if(!list.isEmpty()){
-            throw new BusinessException(ErrorCode.INVALID_PRODUCT_ORDER, list);
         }
 
         Map<Long, Integer> quantityMap = request.getItems().stream()
