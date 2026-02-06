@@ -4,23 +4,16 @@ import com.mudosa.musinsa.payment.application.dto.request.*;
 import com.mudosa.musinsa.payment.application.dto.PaymentResponseDto;
 import com.mudosa.musinsa.payment.application.dto.response.TossPaymentCancelResponse;
 import com.mudosa.musinsa.payment.application.dto.response.TossPaymentConfirmResponse;
-import com.mudosa.musinsa.payment.domain.model.PgProvider;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
-@Slf4j
 @Service
+@ConditionalOnProperty(name = "payment.pg-provider", havingValue = "toss")
 @RequiredArgsConstructor
 public class TossPaymentStrategy implements PaymentStrategy {
 
-	private static final PgProvider PROVIDER_NAME = PgProvider.TOSS;
 	private final TossPaymentService tossPaymentService;
-
-	@Override
-	public boolean supports(PaymentContext context) {
-		return context.getPgProvider() == PROVIDER_NAME;
-	}
 
 	@Override
 	public PaymentResponseDto confirmPayment(PaymentConfirmRequest request) {

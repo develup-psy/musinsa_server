@@ -2,28 +2,17 @@ package com.mudosa.musinsa.payment.application.service;
 
 import com.mudosa.musinsa.exception.BusinessException;
 import com.mudosa.musinsa.exception.ErrorCode;
-import com.mudosa.musinsa.order.application.OrderService;
 import com.mudosa.musinsa.payment.application.dto.*;
 import com.mudosa.musinsa.payment.application.dto.request.PaymentCancelRequest;
 import com.mudosa.musinsa.payment.application.dto.request.PaymentCancelResponseDto;
 import com.mudosa.musinsa.payment.application.dto.request.PaymentConfirmRequest;
 import com.mudosa.musinsa.payment.application.dto.response.PaymentCancelResponse;
 import com.mudosa.musinsa.payment.application.dto.response.PaymentConfirmResponse;
-import com.mudosa.musinsa.payment.domain.model.Payment;
-import com.mudosa.musinsa.payment.domain.model.PaymentEventType;
-import com.mudosa.musinsa.payment.domain.model.PgProvider;
-import com.mudosa.musinsa.payment.domain.repository.PaymentRepository;
-import com.mudosa.musinsa.payment.application.event.PaymentApprovedEvent;
 import io.micrometer.observation.annotation.Observed;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import static com.mudosa.musinsa.exception.ErrorCode.PAYMENT_APPROVAL_FAILED;
@@ -37,15 +26,15 @@ public class PaymentService {
     private final PaymentProcessor paymentProcessor;
     private final PaymentConfirmService paymentConfirmService;
 
-    @Observed(name = "payment.confirmAndCompleteOrder", contextualName = "결제승인-주문완료")
-    public PaymentConfirmResponse confirmPaymentAndCompleteOrder(PaymentConfirmRequest request, Long userId) {
+    @Observed(name = "payment.confirmAndCompleteOrder", contextualName = "결제승인")
+    public PaymentConfirmResponse confirmPayment(PaymentConfirmRequest request, Long userId) {
         Long paymentId = null;
         Long orderId = null;
         boolean pgApproved = false;
 
         try{
             //TX1: 결제 생성
-            PaymentCreationResult creationResult = paymentConfirmService.createPaymentTransaction(request.toPaymentCreateRequest(), userId);
+            PaymentCreationResult creationResult = paymentConfirmService.createPayment(request.toPaymentCreateRequest(), userId);
 
             paymentId = creationResult.getPaymentId();
             orderId = creationResult.getOrderId();

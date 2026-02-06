@@ -1,14 +1,14 @@
 package com.mudosa.musinsa.order.application.dto.response;
 
-import com.mudosa.musinsa.order.application.dto.OrderDetailItem;
 import com.mudosa.musinsa.order.application.dto.OrderItem;
+import com.mudosa.musinsa.order.domain.model.Order;
 import com.mudosa.musinsa.order.domain.model.OrderStatus;
+import com.mudosa.musinsa.payment.domain.model.Payment;
 import com.mudosa.musinsa.payment.domain.model.PaymentStatus;
 import com.mudosa.musinsa.payment.domain.model.PgProvider;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -42,4 +42,25 @@ public class OrderDetailResponse {
     private LocalDateTime approvedAt;
     private PaymentStatus paymentStatus;
     private LocalDateTime cancelledAt;
+
+    public static OrderDetailResponse build(Order order, Payment payment, List<OrderItem> orderProductsInfo){
+        return OrderDetailResponse.builder()
+                .orderNo(order.getOrderNo())
+                .orderStatus(order.getStatus())
+                .totalProductAmount(order.getTotalPrice().getAmount())
+                .discountAmount(order.getTotalDiscount().getAmount())
+                .orderedAt(order.getRegisteredAt())
+                .userName(order.getShippingName())
+                .userAddress(order.getShippingAddress())
+                .userContactNumber(order.getShippingPhone())
+                .orderItems(orderProductsInfo)
+                .paymentFinalAmount(payment.getAmount())
+                .paymentMethod(payment.getMethod())
+                .pgProvider(payment.getPgProvider())
+                .approvedAt(payment.getApprovedAt())
+                .paymentStatus(payment.getStatus())
+                .cancelledAt(payment.getCancelledAt())
+                .paymentTransactionId(payment.getPgTransactionId())
+                .build();
+    }
 }

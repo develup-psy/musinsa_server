@@ -30,4 +30,16 @@ public class OrderItem {
         this.size = size;
         this.color = color;
     }
+
+    public static OrderItem toOrderItem(OrderDetail flatDto){
+        return new OrderItem(
+                flatDto.productOptionId(),
+                flatDto.brandName(),
+                flatDto.productName(),
+                flatDto.itemAmount(),
+                flatDto.quantity(),
+                flatDto.imageUrl(),
+                flatDto.size(),
+                flatDto.color());
+    }
 }

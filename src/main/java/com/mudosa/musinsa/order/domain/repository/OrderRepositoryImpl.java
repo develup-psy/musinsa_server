@@ -1,9 +1,9 @@
 package com.mudosa.musinsa.order.domain.repository;
 
-import com.mudosa.musinsa.order.application.dto.OrderFlatDto;
+import com.mudosa.musinsa.order.application.dto.OrderDetail;
 import com.mudosa.musinsa.order.application.dto.OrderItem;
-import com.mudosa.musinsa.order.application.dto.QOrderFlatDto;
 import com.mudosa.musinsa.order.application.dto.QOrderItem;
+import com.mudosa.musinsa.order.application.dto.QOrderDetail;
 import com.mudosa.musinsa.order.domain.model.OrderStatus;
 import com.mudosa.musinsa.product.domain.model.ValueName;
 import com.querydsl.core.types.dsl.CaseBuilder;
@@ -13,7 +13,6 @@ import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import io.micrometer.observation.annotation.Observed;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -33,7 +32,7 @@ public class OrderRepositoryImpl implements OrderRepositoryCustom{
 
     private final JPAQueryFactory queryFactory;
 
-    @Observed(name = "repository.findOrderItems", contextualName = "주문상품-조회-QueryDSL")
+    @Observed(name = "repository.findOrderItems", contextualName = "주문상품-조회")
     @Override
     public List<OrderItem> findOrderItems(String orderNo) {
         return queryFactory
@@ -65,15 +64,15 @@ public class OrderRepositoryImpl implements OrderRepositoryCustom{
                 .fetch();
     }
 
-    @Observed(name = "repository.findFlatOrderList", contextualName = "주문목록-조회-QueryDSL")
+    @Observed(name = "repository.findFlatOrderList", contextualName = "주문목록-조회")
     @Override
-    public List<OrderFlatDto> findFlatOrderListWithDetails(Long userId) {
+    public List<OrderDetail> findOrderDetails(Long userId) {
         StringExpression sizeValue = createSizeValueExpression();
         StringExpression colorValue = createColorValueExpression();
         JPQLQuery<String> imageOne = createThumbnailImageSubquery();
 
         return queryFactory
-                .select(new QOrderFlatDto(
+                .select(new QOrderDetail(
                         order.orderNo,
                         order.status,
                         order.registeredAt,
@@ -96,9 +95,15 @@ public class OrderRepositoryImpl implements OrderRepositoryCustom{
                 .leftJoin(productOptionValue.optionValue, optionValue1)
                 .where(order.userId.eq(userId).and(order.status.ne(OrderStatus.PENDING)))
                 .groupBy(
-                        order.orderNo, order.status, order.registeredAt, order.totalPrice.amount,
-                        productOption.productOptionId, brand.nameKo, product.productName,
-                        productOption.productPrice.amount, orderProduct.productQuantity
+                        order.orderNo,
+                        order.status,
+                        order.registeredAt,
+                        order.totalPrice.amount,
+                        productOption.productOptionId,
+                        brand.nameKo,
+                        product.productName,
+                        productOption.productPrice.amount,
+                        orderProduct.productQuantity
                 )
                 .fetch();
     }

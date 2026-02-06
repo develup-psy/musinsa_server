@@ -4,9 +4,8 @@ import com.mudosa.musinsa.ServiceConfig;
 import com.mudosa.musinsa.brand.domain.model.Brand;
 import com.mudosa.musinsa.brand.domain.model.BrandStatus;
 import com.mudosa.musinsa.common.vo.Money;
-import com.mudosa.musinsa.order.application.dto.OrderFlatDto;
+import com.mudosa.musinsa.order.application.dto.OrderDetail;
 import com.mudosa.musinsa.order.application.dto.OrderItem;
-import com.mudosa.musinsa.order.application.dto.response.OrderInfo;
 import com.mudosa.musinsa.order.domain.model.Order;
 import com.mudosa.musinsa.order.domain.model.OrderProduct;
 import com.mudosa.musinsa.order.domain.model.OrderStatus;
@@ -116,22 +115,22 @@ class OrderRepositoryImplTest extends ServiceConfig {
     @Test
     void findFlatOrderListWithDetails() {
         //when
-        List<OrderFlatDto> flatOrders = orderRepository.findFlatOrderListWithDetails(userId);
+        List<OrderDetail> flatOrders = orderRepository.findOrderDetails(userId);
 
         //then
         assertThat(flatOrders).hasSize(1);
         
-        OrderFlatDto flatOrder = flatOrders.get(0);
-        assertThat(flatOrder.getOrderNo()).isEqualTo(testOrderNo);
-        assertThat(flatOrder.getOrderStatus()).isEqualTo(OrderStatus.PENDING);
-        assertThat(flatOrder.getTotalPrice()).isEqualByComparingTo("40000");
-        assertThat(flatOrder.getBrandName()).isEqualTo("테스트 브랜드");
-        assertThat(flatOrder.getProductName()).isEqualTo("테스트 상품");
-        assertThat(flatOrder.getQuantity()).isEqualTo(2);
-        assertThat(flatOrder.getImageUrl()).isEqualTo("https://example.com/image1.jpg");
-        assertThat(flatOrder.getSize()).isEqualTo("L");
-        assertThat(flatOrder.getColor()).isEqualTo("BLACK");
-        assertThat(flatOrder.getItemAmount()).isEqualByComparingTo("20000");
+        OrderDetail flatOrder = flatOrders.get(0);
+        assertThat(flatOrder.orderNo()).isEqualTo(testOrderNo);
+        assertThat(flatOrder.orderStatus()).isEqualTo(OrderStatus.PENDING);
+        assertThat(flatOrder.totalPrice()).isEqualByComparingTo("40000");
+        assertThat(flatOrder.brandName()).isEqualTo("테스트 브랜드");
+        assertThat(flatOrder.productName()).isEqualTo("테스트 상품");
+        assertThat(flatOrder.quantity()).isEqualTo(2);
+        assertThat(flatOrder.imageUrl()).isEqualTo("https://example.com/image1.jpg");
+        assertThat(flatOrder.size()).isEqualTo("L");
+        assertThat(flatOrder.color()).isEqualTo("BLACK");
+        assertThat(flatOrder.itemAmount()).isEqualByComparingTo("20000");
     }
 
 
@@ -154,7 +153,7 @@ class OrderRepositoryImplTest extends ServiceConfig {
         em.clear();
 
         //when
-        List<OrderFlatDto> orderInfos = orderRepository.findFlatOrderListWithDetails(newUser.getId());
+        List<OrderDetail> orderInfos = orderRepository.findOrderDetails(newUser.getId());
 
         //then
         assertThat(orderInfos).isEmpty();

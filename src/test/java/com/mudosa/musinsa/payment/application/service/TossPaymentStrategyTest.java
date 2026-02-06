@@ -8,7 +8,6 @@ import com.mudosa.musinsa.exception.ExternalApiException;
 import com.mudosa.musinsa.payment.application.dto.PaymentResponseDto;
 import com.mudosa.musinsa.payment.application.dto.request.PaymentConfirmRequest;
 import com.mudosa.musinsa.payment.application.dto.response.TossPaymentConfirmResponse;
-import com.mudosa.musinsa.payment.domain.model.PgProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,7 +16,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -34,38 +32,6 @@ class TossPaymentStrategyTest extends ServiceConfig {
 
     @MockBean
     private RestTemplateClient restTemplateClient;
-
-    @DisplayName("조건에 만족하는 결제 전략일 시 true를 반환한다.")
-    @Test
-    void supportsValidConditionReturnsTrue() {
-        //given
-        PaymentContext context = PaymentContext.builder()
-                .pgProvider(PgProvider.TOSS)
-                .amount(BigDecimal.valueOf(50000))
-                .paymentType(PaymentType.NORMAL)
-                .build();
-
-        //when
-        boolean result = tossPaymentStrategy.supports(context);
-
-        //then
-        assertThat(result).isTrue();
-    }
-
-    @DisplayName("결제전략 조건에 안맞을 때 false를 반환한다.")
-    @Test
-    void supportsAmountExceedsReturnsFalse() {
-        // given
-        PaymentContext context = PaymentContext.builder()
-                .pgProvider(PgProvider.KAKAO)
-                .build();
-
-        // when
-        boolean result = tossPaymentStrategy.supports(context);
-
-        // then
-        assertThat(result).isFalse();
-    }
 
     @Test
     @DisplayName("결제 승인 API 호출에 성공")

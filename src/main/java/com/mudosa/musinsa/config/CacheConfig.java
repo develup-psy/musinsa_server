@@ -2,7 +2,6 @@ package com.mudosa.musinsa.config;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.mudosa.musinsa.order.application.dto.OrderCacheData;
 import com.mudosa.musinsa.order.application.dto.OrderItem;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.cache.CaffeineCacheMetrics;

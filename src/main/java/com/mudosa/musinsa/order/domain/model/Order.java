@@ -5,8 +5,6 @@ import com.mudosa.musinsa.common.domain.model.BaseEntity;
 import com.mudosa.musinsa.common.vo.Money;
 import com.mudosa.musinsa.exception.BusinessException;
 import com.mudosa.musinsa.exception.ErrorCode;
-import com.mudosa.musinsa.order.application.dto.InsufficientStockItem;
-import com.mudosa.musinsa.order.application.dto.OrderCreateItem;
 import com.mudosa.musinsa.product.domain.model.ProductOption;
 import com.mudosa.musinsa.user.domain.model.User;
 import jakarta.persistence.*;
@@ -14,16 +12,12 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.aspectj.weaver.ast.Or;
 import org.springframework.data.annotation.CreatedDate;
-
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
 
 @Entity
 @Table(name = "orders")

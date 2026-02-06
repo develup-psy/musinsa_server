@@ -29,7 +29,7 @@ public class PaymentConfirmService {
 
     @Observed(name = "payment.transaction.create", contextualName = "결제-트랜잭션-생성")
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    protected PaymentCreationResult createPaymentTransaction(PaymentCreateDto request, Long userId) {
+    protected PaymentCreationResult createPayment(PaymentCreateDto request, Long userId) {
         // 주문 완료(재고 차감, 주문 상태 변경)
         Long orderId =
                 orderService.completeOrder(
@@ -57,7 +57,7 @@ public class PaymentConfirmService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void approvePayment(Long paymentId, Long userId, PaymentResponseDto paymentResponseDto, Long orderId) {
         //장바구니 삭제
-        Order order = orderService.deleteCartItems(orderId, userId);
+        orderService.deleteCartItems(orderId, userId);
 
         //결제 조회
         Payment payment = paymentRepository.findById(paymentId)
@@ -109,7 +109,7 @@ public class PaymentConfirmService {
         paymentRepository.save(payment);
 
         //주문 관련 원복
-        Order order = orderService.cancelOrder(payment.getOrderId());
+        orderService.cancelOrder(payment.getOrderId());
     }
 
     @Observed(name = "payment.cancelFail", contextualName = "결제-취소실패")
@@ -120,6 +120,6 @@ public class PaymentConfirmService {
         payment.cancelFail(message, userId);
 
         //주문 및 재고 롤백
-        Order order = orderService.rollbackOrderCancel(payment.getOrderId());
+        orderService.rollbackOrderCancel(payment.getOrderId());
     }
 }
