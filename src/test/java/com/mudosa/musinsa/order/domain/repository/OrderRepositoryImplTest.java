@@ -20,6 +20,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.data.domain.PageRequest;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -81,7 +83,7 @@ class OrderRepositoryImplTest extends ServiceConfig {
         em.clear();
     }
 
-    @DisplayName("주문 번호로 주문 아이템을 조회한다.")
+    @DisplayName("주문 번호로 주문 아이템을 조회한다 (옵션은 서비스 레이어에서 별도 매핑)")
     @Test
     void findOrderItems(){
 
@@ -93,29 +95,28 @@ class OrderRepositoryImplTest extends ServiceConfig {
                 .hasSize(1)
                 .extracting(
                         "brandName",
-                        "productOptionName", 
+                        "productOptionName",
                         "quantity",
-                        "imageUrl", 
-                        "size", 
-                        "color"
+                        "imageUrl"
                 )
                 .containsExactlyInAnyOrder(
                         tuple(
                                 "테스트 브랜드",
                                 "테스트 상품",
                                 2,
-                                "https://example.com/image1.jpg",
-                                "L",
-                                "BLACK"
+                                "https://example.com/image1.jpg"
                         )
                 );
+
+        // 옵션은 리포지토리가 아닌 서비스에서 적용되므로 비어있음
+        assertThat(orderItems.get(0).getOptions()).isEmpty();
     }
 
-    @DisplayName("사용자 ID로 플랫 구조의 주문 목록을 조회한다.")
+    @DisplayName("사용자 ID로 페이징된 주문 목록을 조회한다 (옵션은 서비스 레이어에서 별도 매핑)")
     @Test
-    void findFlatOrderListWithDetails() {
+    void findOrderDetailsPaged() {
         //when
-        List<OrderDetail> flatOrders = orderRepository.findOrderDetails(userId);
+        List<OrderDetail> flatOrders = orderRepository.findOrderDetailsPaged(userId, PageRequest.of(0, 20));
 
         //then
         assertThat(flatOrders).hasSize(1);
@@ -128,15 +129,13 @@ class OrderRepositoryImplTest extends ServiceConfig {
         assertThat(flatOrder.productName()).isEqualTo("테스트 상품");
         assertThat(flatOrder.quantity()).isEqualTo(2);
         assertThat(flatOrder.imageUrl()).isEqualTo("https://example.com/image1.jpg");
-        assertThat(flatOrder.size()).isEqualTo("L");
-        assertThat(flatOrder.color()).isEqualTo("BLACK");
         assertThat(flatOrder.itemAmount()).isEqualByComparingTo("20000");
     }
 
 
     @DisplayName("주문이 없는 사용자는 빈 리스트를 반환한다.")
     @Test
-    void findFlatOrderListWithDetails_NoOrders() {
+    void findOrderDetailsPaged_NoOrders() {
         //given
         User newUser = User.builder()
                 .userName("newUser")
@@ -153,7 +152,7 @@ class OrderRepositoryImplTest extends ServiceConfig {
         em.clear();
 
         //when
-        List<OrderDetail> orderInfos = orderRepository.findOrderDetails(newUser.getId());
+        List<OrderDetail> orderInfos = orderRepository.findOrderDetailsPaged(newUser.getId(), PageRequest.of(0, 20));
 
         //then
         assertThat(orderInfos).isEmpty();

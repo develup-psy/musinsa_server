@@ -6,13 +6,17 @@ import com.mudosa.musinsa.order.application.dto.*;
 import com.mudosa.musinsa.order.application.dto.request.OrderCreateRequest;
 import com.mudosa.musinsa.order.application.dto.response.OrderCreateResponse;
 import com.mudosa.musinsa.order.application.dto.response.OrderDetailResponse;
-import com.mudosa.musinsa.order.application.dto.response.OrderListResponse;
+import com.mudosa.musinsa.common.dto.PageResponse;
+import com.mudosa.musinsa.order.application.dto.response.OrderInfo;
 import com.mudosa.musinsa.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -68,16 +72,16 @@ public class OrderController {
 
     @Operation(
             summary = "주문 목록 조회",
-            description = "주문 목록을 조회합니다."
+            description = "주문 목록을 페이징 조회합니다."
     )
     @GetMapping
-    public ResponseEntity<ApiResponse<OrderListResponse>> fetchOrderList(
-            @AuthenticationPrincipal CustomUserDetails userDetails
+    public ResponseEntity<ApiResponse<PageResponse<OrderInfo>>> fetchOrderList(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PageableDefault(size = 20) Pageable pageable
     ){
         Long userId = userDetails.getUserId();
-        OrderListResponse response = orderService.fetchOrderList(userId);
-
-        return ResponseEntity.ok(ApiResponse.success(response));
+        Page<OrderInfo> result = orderService.fetchOrderList(userId, pageable);
+        return ResponseEntity.ok(ApiResponse.success(PageResponse.from(result)));
     }
 
     @Operation(

@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 
 public record OrderDetail(String orderNo, OrderStatus orderStatus, LocalDateTime registeredAt, BigDecimal totalPrice,
                           Long productOptionId, String brandName, String productName, BigDecimal itemAmount,
-                          Integer quantity, String imageUrl, String size, String color) {
+                          Integer quantity, String imageUrl) {
     @QueryProjection
     public OrderDetail {
     }
