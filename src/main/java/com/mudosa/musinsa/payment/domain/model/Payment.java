@@ -41,6 +41,8 @@ public class Payment extends BaseEntity{
     private PgProvider pgProvider;
     
     private String pgTransactionId;
+
+    private Long userId;
     
     private LocalDateTime approvedAt;
     private LocalDateTime cancelledAt;
@@ -49,7 +51,7 @@ public class Payment extends BaseEntity{
     private List<PaymentLog> paymentLogs = new ArrayList<>();
 
     @Builder
-    private Payment(Long orderId, PaymentStatus status, String currency, String method, BigDecimal amount, PgProvider pgProvider, String pgTransactionId, LocalDateTime approvedAt, LocalDateTime cancelledAt, List<PaymentLog> paymentLogs) {
+    private Payment(Long orderId, PaymentStatus status, String currency, String method, BigDecimal amount, PgProvider pgProvider, String pgTransactionId, Long userId, LocalDateTime approvedAt, LocalDateTime cancelledAt, List<PaymentLog> paymentLogs) {
         this.orderId = orderId;
         this.status = status;
         this.currency = currency != null ? currency : "KRW";
@@ -57,6 +59,7 @@ public class Payment extends BaseEntity{
         this.amount = amount;
         this.pgProvider = pgProvider;
         this.pgTransactionId = pgTransactionId;
+        this.userId = userId;
         this.approvedAt = approvedAt;
         this.cancelledAt = cancelledAt;
         this.paymentLogs = (paymentLogs != null ? paymentLogs : new ArrayList<>());
@@ -85,10 +88,46 @@ public class Payment extends BaseEntity{
                 .orderId(orderId)
                 .pgProvider(pgProvider)
                 .amount(amount)
+                .userId(userId)
                 .build();
 
         //결제 로그 추가
         PaymentLog paymentLog = PaymentLog.create(payment, PaymentEventType.CREATED,null, userId);
+        payment.paymentLogs.add(paymentLog);
+
+        return payment;
+    }
+
+    /**
+     * 대기열 기반 결제 생성 (status = QUEUED)
+     * PG 호출 전 대기열에 등록될 결제
+     */
+    public static Payment createQueued(
+            Long orderId,
+            BigDecimal amount,
+            PgProvider pgProvider,
+            String paymentKey,
+            Long userId) {
+
+        validateRequiredParameters(orderId, amount, pgProvider, userId);
+
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessException(
+                    ErrorCode.PAYMENT_CREATE_FAILED,
+                    "결제 금액은 0보다 커야 합니다"
+            );
+        }
+
+        Payment payment = Payment.builder()
+                .status(PaymentStatus.QUEUED)
+                .orderId(orderId)
+                .pgProvider(pgProvider)
+                .pgTransactionId(paymentKey)
+                .amount(amount)
+                .userId(userId)
+                .build();
+
+        PaymentLog paymentLog = PaymentLog.create(payment, PaymentEventType.CREATED, "대기열 등록", userId);
         payment.paymentLogs.add(paymentLog);
 
         return payment;

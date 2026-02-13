@@ -9,6 +9,8 @@ public enum PaymentEventType {
 
     CREATED("결제 생성"),
 
+    QUEUED("대기열 등록"),
+
     APPROVAL_REQUESTED("결제 승인 요청"),
 
     APPROVED("결제 승인 완료"),

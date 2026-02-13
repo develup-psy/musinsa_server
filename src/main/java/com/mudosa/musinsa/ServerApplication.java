@@ -9,12 +9,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication(exclude = {BatchAutoConfiguration.class})
 @EnableScheduling
-@MapperScan(
-    basePackages = {
-        "com.mudosa.musinsa.settlement.domain.repository",
-    },
-    annotationClass = Mapper.class
-)
 public class ServerApplication {
 
     public static void main(String[] args) {

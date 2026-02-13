@@ -62,3 +62,10 @@ aws:
 
 payment:
   pg-provider: toss
+
+pg:
+  rate-limit:
+    max-requests: 100        # TossPayments Rate Limit (TPS)
+    window-seconds: 1
+  queue:
+    max-size: 10000           # 대기열 최대 크기 (무한 증가 방지)

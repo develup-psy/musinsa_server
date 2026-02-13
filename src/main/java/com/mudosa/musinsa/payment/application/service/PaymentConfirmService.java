@@ -53,6 +53,34 @@ public class PaymentConfirmService {
                 .build();
     }
 
+    /**
+     * 대기열 기반 결제 생성 (status = QUEUED)
+     * TX1: 주문 완료(재고 차감) + 결제 생성(QUEUED 상태)
+     */
+    @Observed(name = "payment.transaction.createQueued", contextualName = "결제-트랜잭션-대기열생성")
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public PaymentCreationResult createQueuedPayment(PaymentCreateDto request, String paymentKey, Long userId) {
+        // 주문 완료(재고 차감, 주문 상태 변경)
+        Long orderId = orderService.completeOrder(request.getOrderNo());
+
+        // 결제 생성 (QUEUED 상태)
+        Payment payment = Payment.createQueued(
+                orderId,
+                request.getTotalAmount(),
+                request.getPgProvider(),
+                paymentKey,
+                userId
+        );
+
+        paymentRepository.save(payment);
+
+        return PaymentCreationResult.builder()
+                .paymentId(payment.getId())
+                .orderId(orderId)
+                .userId(userId)
+                .build();
+    }
+
     @Observed(name = "payment.approve", contextualName = "결제-승인")
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void approvePayment(Long paymentId, Long userId, PaymentResponseDto paymentResponseDto, Long orderId) {

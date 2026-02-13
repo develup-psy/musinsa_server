@@ -9,6 +9,28 @@ import lombok.extern.slf4j.Slf4j;
 @Getter
 @RequiredArgsConstructor
 public enum PaymentStatus {
+    QUEUED("대기열 대기") {
+        @Override
+        public PaymentStatus approve() {
+            return APPROVED;
+        }
+
+        @Override
+        public PaymentStatus fail() {
+            return FAILED;
+        }
+
+        @Override
+        public PaymentStatus cancel() {
+            throw invalidTransition("취소");
+        }
+
+        @Override
+        public PaymentStatus toPending() {
+            return PENDING;
+        }
+    },
+
     PENDING("결제 대기") {
         @Override
         public PaymentStatus approve() {
@@ -93,6 +115,10 @@ public enum PaymentStatus {
     public abstract PaymentStatus approve();
     public abstract PaymentStatus fail();
     public abstract PaymentStatus cancel();
+
+    public PaymentStatus toPending() {
+        throw invalidTransition("대기 전환");
+    }
 
     public PaymentStatus rollback() {
         throw invalidTransition("재시도");

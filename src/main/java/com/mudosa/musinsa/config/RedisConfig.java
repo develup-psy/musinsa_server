@@ -6,10 +6,13 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
@@ -65,5 +68,13 @@ public class RedisConfig {
 
     template.afterPropertiesSet();
     return template;
+  }
+
+  @Bean
+  public RedisScript<String> enqueuePaymentScript() {
+    DefaultRedisScript<String> script = new DefaultRedisScript<>();
+    script.setLocation(new ClassPathResource("scripts/enqueue-payment.lua"));
+    script.setResultType(String.class);
+    return script;
   }
 }
