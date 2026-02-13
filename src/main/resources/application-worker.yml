@@ -1,0 +1,4 @@
+payment:
+  queue:
+    worker:
+      enabled: true
