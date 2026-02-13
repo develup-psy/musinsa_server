@@ -3,12 +3,12 @@ package com.mudosa.musinsa.payment.application.service;
 import com.mudosa.musinsa.exception.BusinessException;
 import com.mudosa.musinsa.exception.ErrorCode;
 import com.mudosa.musinsa.order.application.OrderService;
-import com.mudosa.musinsa.order.domain.model.Order;
 import com.mudosa.musinsa.payment.application.dto.PaymentCreateDto;
 import com.mudosa.musinsa.payment.application.dto.PaymentCreationResult;
 import com.mudosa.musinsa.payment.application.dto.PaymentResponseDto;
 import com.mudosa.musinsa.payment.domain.model.Payment;
 import com.mudosa.musinsa.payment.domain.model.PaymentEventType;
+import com.mudosa.musinsa.payment.domain.model.PaymentStatus;
 import com.mudosa.musinsa.payment.domain.repository.PaymentRepository;
 import io.micrometer.observation.annotation.Observed;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +39,7 @@ public class PaymentConfirmService {
         // 결제 생성
         Payment payment = Payment.create(
                 orderId,
+                request.getOrderNo(),
                 request.getTotalAmount(),
                 request.getPgProvider(),
                 userId
@@ -50,13 +51,10 @@ public class PaymentConfirmService {
                 .paymentId(payment.getId())
                 .orderId(orderId)
                 .userId(userId)
+                .createdAt(payment.getCreatedAt())
                 .build();
     }
 
-    /**
-     * 대기열 기반 결제 생성 (status = QUEUED)
-     * TX1: 주문 완료(재고 차감) + 결제 생성(QUEUED 상태)
-     */
     @Observed(name = "payment.transaction.createQueued", contextualName = "결제-트랜잭션-대기열생성")
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public PaymentCreationResult createQueuedPayment(PaymentCreateDto request, String paymentKey, Long userId) {
@@ -66,6 +64,7 @@ public class PaymentConfirmService {
         // 결제 생성 (QUEUED 상태)
         Payment payment = Payment.createQueued(
                 orderId,
+                request.getOrderNo(),
                 request.getTotalAmount(),
                 request.getPgProvider(),
                 paymentKey,
@@ -78,6 +77,7 @@ public class PaymentConfirmService {
                 .paymentId(payment.getId())
                 .orderId(orderId)
                 .userId(userId)
+                .createdAt(payment.getCreatedAt())
                 .build();
     }
 
@@ -114,11 +114,44 @@ public class PaymentConfirmService {
         paymentRepository.save(payment);
     }
 
+    @Observed(name = "payment.startProcessing", contextualName = "결제-처리시작")
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public boolean startProcessingIfQueued(Long paymentId, Long userId) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElse(null);
+
+        if (payment == null || !payment.isQueue()) {
+            return false;
+        }
+
+        payment.startProcessing(userId);
+        paymentRepository.save(payment);
+        return true;
+    }
+
+    @Observed(name = "payment.requeue", contextualName = "결제-재대기")
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public boolean requeueIfPending(Long paymentId, String reason, Long userId) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElse(null);
+
+        if (payment == null || payment.getStatus() != PaymentStatus.PENDING) {
+            return false;
+        }
+
+        payment.requeue(reason, userId);
+        paymentRepository.save(payment);
+        return true;
+    }
+
 
     @Observed(name = "payment.manualCheck", contextualName = "결제-수동확인")
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     protected void manualPaymentCheck(Long paymentId, Long userId){
         Payment payment = paymentRepository.findById(paymentId).orElse(null);
+        if (payment == null) {
+            return;
+        }
         payment.addLog(PaymentEventType.REQUIRES_MANUAL_CHECK,
                 "PG 승인 후 예상치 못한 오류 발생", userId);
         paymentRepository.save(payment);

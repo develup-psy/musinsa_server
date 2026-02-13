@@ -62,10 +62,17 @@ aws:
 
 payment:
   pg-provider: toss
+  queue:
+    worker:
+      enabled: true
 
 pg:
   rate-limit:
     max-requests: 100        # TossPayments Rate Limit (TPS)
-    window-seconds: 1
+    window-millis: 1000
   queue:
-    max-size: 10000           # 대기열 최대 크기 (무한 증가 방지)
+    batch-size: 100
+    worker-delay-millis: 200
+    reconcile-delay-millis: 5000
+    sweeper-delay-millis: 5000
+    processing-timeout-seconds: 30

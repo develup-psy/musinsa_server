@@ -56,3 +56,8 @@ logging:
 cache:
   preload:
     enabled: false
+
+payment:
+  queue:
+    worker:
+      enabled: false

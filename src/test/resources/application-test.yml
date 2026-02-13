@@ -60,3 +60,8 @@ aws:
 cache:
   preload:
     enabled: false # 테스트 하고싶으면 true
+
+payment:
+  queue:
+    worker:
+      enabled: false

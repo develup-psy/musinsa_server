@@ -5,15 +5,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mudosa.musinsa.exception.BusinessException;
 import com.mudosa.musinsa.exception.ErrorCode;
 import com.mudosa.musinsa.payment.application.dto.EnqueueResult;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 @Slf4j
 @Component
@@ -22,38 +27,30 @@ public class PaymentQueueService {
 
     private final RedisTemplate<String, Object> redisTemplate;
     private final RedisScript<String> enqueuePaymentScript;
+    private final RedisScript<Long> acquireRateSlotScript;
     private final ObjectMapper objectMapper;
 
-    @Value("${pg.queue.max-size:10000}")
-    private int maxQueueSize;
-
-    @Value("${pg.rate-limit.max-requests:100}")
+    @Value("${pg.queue.batch-size:100}")
     private int batchSize;
 
-    private static final String QUEUE_KEY_PREFIX = "payment_queue:event:";
+    @Getter
+    @Value("${pg.rate-limit.max-requests:100}")
+    private long maxRequests;
+
+    @Value("${pg.rate-limit.window-millis:1000}")
+    private long windowMillis;
+
     private static final String DEFAULT_QUEUE_KEY = "payment_queue:default";
+    private static final String DEFAULT_RATE_WINDOW_KEY = "payment_rate_window:default";
 
-    /**
-     * 결제 요청을 대기열에 등록
-     * Lua 스크립트로 ZADD + ZRANK를 원자적으로 실행
-     */
-    public EnqueueResult enqueue(Long paymentId) {
-        return enqueue(paymentId, null);
-    }
-
-    /**
-     * 이벤트별 대기열에 결제 요청 등록
-     */
-    public EnqueueResult enqueue(Long paymentId, Long eventId) {
-        String key = resolveKey(eventId);
-        double score = System.nanoTime() / 1_000_000.0; // ms 단위 정밀도
+    public EnqueueResult enqueue(Long paymentId, LocalDateTime createdAt) {
+        double score = toEpochMillis(createdAt);
 
         String result = redisTemplate.execute(
                 enqueuePaymentScript,
-                List.of(key),
+                List.of(DEFAULT_QUEUE_KEY),
                 String.valueOf(score),
-                paymentId.toString(),
-                String.valueOf(maxQueueSize)
+                paymentId.toString()
         );
 
         if (result == null) {
@@ -63,67 +60,60 @@ public class PaymentQueueService {
         return parseEnqueueResult(result);
     }
 
-    /**
-     * 대기열에서 배치 크기만큼 꺼내기 (ZPOPMIN: 원자적 추출 + 삭제)
-     */
-    public Set<org.springframework.data.redis.core.ZSetOperations.TypedTuple<Object>> popBatch(Long eventId) {
-        String key = resolveKey(eventId);
-        return redisTemplate.opsForZSet().popMin(key, batchSize);
-    }
-
-    /**
-     * 기본 대기열에서 배치 꺼내기
-     */
-    public Set<org.springframework.data.redis.core.ZSetOperations.TypedTuple<Object>> popBatch() {
-        return popBatch(null);
-    }
-
-    /**
-     * 현재 대기 순번 조회 (0-based)
-     */
-    public Long getPosition(Long paymentId, Long eventId) {
-        String key = resolveKey(eventId);
-        return redisTemplate.opsForZSet().rank(key, paymentId.toString());
+    public Set<ZSetOperations.TypedTuple<Object>> popBatch() {
+        return redisTemplate.opsForZSet().popMin(DEFAULT_QUEUE_KEY, batchSize);
     }
 
     public Long getPosition(Long paymentId) {
-        return getPosition(paymentId, null);
+        return redisTemplate.opsForZSet().rank(DEFAULT_QUEUE_KEY, paymentId.toString());
     }
 
-    /**
-     * 전체 대기열 크기
-     */
-    public Long getQueueSize(Long eventId) {
-        String key = resolveKey(eventId);
-        return redisTemplate.opsForZSet().zCard(key);
-    }
+    public boolean tryAcquireRateSlot(Long paymentId) {
+        long nowMillis = System.currentTimeMillis();
+        String member = paymentId + ":" + UUID.randomUUID();
 
-    public Long getQueueSize() {
-        return getQueueSize(null);
-    }
-
-    /**
-     * 예상 대기 시간 (초)
-     */
-    public long estimateWaitSeconds(long rank) {
-        if (rank <= 0) return 1;
-        return (rank / batchSize) + 1;
-    }
-
-    private String resolveKey(Long eventId) {
-        if (eventId != null) {
-            return QUEUE_KEY_PREFIX + eventId;
+        try {
+            Long result = redisTemplate.execute(
+                    acquireRateSlotScript,
+                    List.of(DEFAULT_RATE_WINDOW_KEY),
+                    String.valueOf(nowMillis),
+                    String.valueOf(windowMillis),
+                    String.valueOf(maxRequests),
+                    member
+            );
+            return result != null && result == 1L;
+        } catch (Exception e) {
+            log.error("Rate slot 획득 실패: paymentId={}", paymentId, e);
+            return false;
         }
-        return DEFAULT_QUEUE_KEY;
+    }
+
+    public void requeue(Long paymentId, Double score) {
+        double requeueScore = (score != null) ? score : System.currentTimeMillis();
+        redisTemplate.opsForZSet().add(DEFAULT_QUEUE_KEY, paymentId.toString(), requeueScore);
+    }
+
+    public Long estimateWaitSeconds(Long rank) {
+        if (rank == null) {
+            return null;
+        }
+        return (rank / maxRequests) + 1;
+    }
+
+    private double toEpochMillis(LocalDateTime dateTime) {
+        if (dateTime == null) {
+            return System.currentTimeMillis();
+        }
+        return dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
     }
 
     private EnqueueResult parseEnqueueResult(String json) {
         try {
             var node = objectMapper.readTree(json);
             return EnqueueResult.builder()
-                    .status(node.get("status").asText())
-                    .rank(node.get("rank").asLong())
-                    .total(node.get("total").asLong())
+                    .status(node.path("status").asText("QUEUED"))
+                    .rank(node.path("rank").asLong(-1))
+                    .total(node.path("total").asLong(0))
                     .build();
         } catch (JsonProcessingException e) {
             log.error("대기열 결과 파싱 실패: {}", json, e);

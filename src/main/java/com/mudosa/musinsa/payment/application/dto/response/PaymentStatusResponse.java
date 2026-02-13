@@ -15,10 +15,11 @@ public class PaymentStatusResponse {
     private String orderNo;
     private String failReason;
 
-    public static PaymentStatusResponse queued(long position, long estimatedWaitSeconds) {
+    public static PaymentStatusResponse queued(Long position, Long estimatedWaitSeconds) {
+        Long queuePosition = position == null ? null : position + 1;
         return PaymentStatusResponse.builder()
                 .status(PaymentStatus.QUEUED)
-                .queuePosition(position + 1)
+                .queuePosition(queuePosition)
                 .estimatedWaitSeconds(estimatedWaitSeconds)
                 .build();
     }
@@ -26,7 +27,7 @@ public class PaymentStatusResponse {
     public static PaymentStatusResponse approved(Payment payment) {
         return PaymentStatusResponse.builder()
                 .status(PaymentStatus.APPROVED)
-                .orderNo(String.valueOf(payment.getOrderId()))
+                .orderNo(payment.getOrderNo())
                 .build();
     }
 

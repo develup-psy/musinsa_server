@@ -12,7 +12,6 @@ import com.mudosa.musinsa.payment.application.dto.response.PaymentQueueResponse;
 import com.mudosa.musinsa.payment.application.dto.response.PaymentStatusResponse;
 import com.mudosa.musinsa.payment.domain.model.Payment;
 import com.mudosa.musinsa.payment.domain.model.PaymentEventType;
-import com.mudosa.musinsa.payment.domain.model.PaymentStatus;
 import com.mudosa.musinsa.payment.domain.repository.PaymentRepository;
 import io.micrometer.observation.annotation.Observed;
 import lombok.RequiredArgsConstructor;
@@ -41,7 +40,6 @@ public class PaymentService {
         boolean pgApproved = false;
 
         try {
-            // TX1: 결제 생성
             PaymentCreationResult creationResult = paymentConfirmService.createPayment(
                     request.toPaymentCreateRequest(), userId
             );
@@ -49,11 +47,9 @@ public class PaymentService {
             paymentId = creationResult.getPaymentId();
             orderId = creationResult.getOrderId();
 
-            // 트랜잭션 아님: PG 승인 요청
             PaymentResponseDto pgResponse = paymentProcessor.processPayment(request);
             pgApproved = true;
 
-            // TX2: 결제 승인
             paymentConfirmService.approvePayment(paymentId, userId, pgResponse, orderId);
 
             return PaymentConfirmResponse.builder()
@@ -95,7 +91,6 @@ public class PaymentService {
     @Observed(name = "payment.confirmPaymentAsync", contextualName = "결제승인-대기열")
     public PaymentQueueResponse confirmPaymentAsync(PaymentConfirmRequest request, Long userId) {
         Long paymentId = null;
-        Long orderId = null;
 
         try {
             // TX1: 주문 완료(재고 차감) + 결제 생성 (QUEUED 상태)
@@ -106,49 +101,46 @@ public class PaymentService {
             );
 
             paymentId = creationResult.getPaymentId();
-            orderId = creationResult.getOrderId();
 
-            // Redis 대기열 등록
-            EnqueueResult enqueueResult = paymentQueueService.enqueue(paymentId);
+            Long queuePosition = null;
+            Long estimatedWaitSeconds = null;
 
-            // 대기열 가득 참 → 즉시 실패 처리
-            if (enqueueResult.isRejected()) {
-                paymentConfirmService.failPayment(paymentId, "대기열 초과", userId, orderId);
-                throw new BusinessException(ErrorCode.PAYMENT_QUEUE_FULL);
+            try {
+                EnqueueResult enqueueResult = paymentQueueService.enqueue(paymentId, creationResult.getCreatedAt());
+                if (enqueueResult.getRank() >= 0) {
+                    queuePosition = enqueueResult.getRank() + 1;
+                    estimatedWaitSeconds = enqueueResult.estimateWaitSeconds(paymentQueueService.getMaxRequests());
+                }
+            } catch (Exception e) {
+                log.warn("Redis 대기열 등록 실패. DB 기준 수용 유지: paymentId={}", paymentId, e);
             }
 
             return PaymentQueueResponse.builder()
                     .ticketId(paymentId)
-                    .queuePosition(enqueueResult.getRank() + 1)
-                    .estimatedWaitSeconds(enqueueResult.estimateWaitSeconds(100))
+                    .queuePosition(queuePosition)
+                    .estimatedWaitSeconds(estimatedWaitSeconds)
                     .status("QUEUED")
                     .orderNo(request.getOrderNo())
                     .build();
 
         } catch (BusinessException e) {
-            // 재고 부족 등 TX1 이전 오류
             if (paymentId == null) {
                 throw e;
             }
-            // TX1 이후 대기열 등록 실패 → 보상 트랜잭션
-            if (e.getErrorCode() != ErrorCode.PAYMENT_QUEUE_FULL) {
-                paymentConfirmService.failPayment(paymentId, e.getMessage(), userId, orderId);
-            }
+            // DB에 QUEUED가 남아 있으므로 보상 롤백하지 않는다.
+            log.error("비동기 결제 수용 중 예외 발생: paymentId={}", paymentId, e);
             throw e;
         }
     }
 
-    /**
-     * 결제 상태 조회 (대기열 기반 결제의 현재 처리 상태)
-     * - QUEUED: 대기 중 → ZRANK로 순번 반환
-     * - APPROVED: 결제 완료
-     * - FAILED: 실패 (최종 실패 로그에서 사유 추출)
-     * - PENDING: 처리 중
-     */
     @Observed(name = "payment.getStatus", contextualName = "결제-상태조회")
-    public PaymentStatusResponse getPaymentStatus(Long paymentId) {
+    public PaymentStatusResponse getPaymentStatus(Long paymentId, Long userId) {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
+
+        if (!payment.getUserId().equals(userId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
 
         return switch (payment.getStatus()) {
             case QUEUED -> buildQueuedResponse(paymentId);
@@ -159,10 +151,14 @@ public class PaymentService {
     }
 
     private PaymentStatusResponse buildQueuedResponse(Long paymentId) {
-        Long position = paymentQueueService.getPosition(paymentId);
-        long safePosition = (position != null) ? position : 0;
-        long waitSeconds = paymentQueueService.estimateWaitSeconds(safePosition);
-        return PaymentStatusResponse.queued(safePosition, waitSeconds);
+        try {
+            Long position = paymentQueueService.getPosition(paymentId);
+            Long waitSeconds = paymentQueueService.estimateWaitSeconds(position);
+            return PaymentStatusResponse.queued(position, waitSeconds);
+        } catch (Exception e) {
+            log.warn("대기 순번 조회 실패. DB 기준 QUEUED 반환: paymentId={}", paymentId, e);
+            return PaymentStatusResponse.queued(null, null);
+        }
     }
 
     private String extractFailReason(Payment payment) {

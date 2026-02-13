@@ -7,6 +7,7 @@ import com.mudosa.musinsa.payment.domain.model.Payment;
 import com.mudosa.musinsa.payment.domain.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -15,6 +16,7 @@ import java.util.Set;
 
 @Slf4j
 @Component
+@ConditionalOnProperty(name = "payment.queue.worker.enabled", havingValue = "true", matchIfMissing = true)
 @RequiredArgsConstructor
 public class PaymentQueueWorker {
 
@@ -23,13 +25,15 @@ public class PaymentQueueWorker {
     private final PaymentConfirmService paymentConfirmService;
     private final PaymentRepository paymentRepository;
 
-    /**
-     * 매 1초마다 대기열에서 최대 batchSize건을 꺼내 PG 승인 처리
-     * ZPOPMIN은 꺼내기와 삭제가 원자적으로 수행되어 경합 조건 방지
-     */
-    @Scheduled(fixedRate = 1000)
+    @Scheduled(fixedDelayString = "${pg.queue.worker-delay-millis:200}")
     public void processQueue() {
-        Set<ZSetOperations.TypedTuple<Object>> batch = paymentQueueService.popBatch();
+        Set<ZSetOperations.TypedTuple<Object>> batch;
+        try {
+            batch = paymentQueueService.popBatch();
+        } catch (Exception e) {
+            log.warn("[PaymentQueueWorker] 큐 조회 실패", e);
+            return;
+        }
 
         if (batch == null || batch.isEmpty()) {
             return;
@@ -37,25 +41,19 @@ public class PaymentQueueWorker {
 
         log.info("[PaymentQueueWorker] 배치 처리 시작: {}건", batch.size());
 
-        // 병렬 처리 (Virtual Thread 활용 시 더 효율적)
+        // 처리량 우선 전략: 배치 내 결제는 병렬 처리한다.
         batch.parallelStream().forEach(tuple -> {
             Long paymentId = parsePaymentId(tuple);
             if (paymentId != null) {
-                processPayment(paymentId);
+                processPayment(paymentId, tuple.getScore());
             }
         });
 
         log.info("[PaymentQueueWorker] 배치 처리 완료: {}건", batch.size());
     }
 
-    /**
-     * 개별 결제 처리
-     * 1. DB에서 결제 정보 조회
-     * 2. 결제 상태를 PENDING으로 전환 (PG 호출 중)
-     * 3. PG 승인 요청
-     * 4. 성공: approvePayment / 실패: failPayment (보상 트랜잭션)
-     */
-    private void processPayment(Long paymentId) {
+    private void processPayment(Long paymentId, Double originalScore) {
+        boolean processingStarted = false;
         try {
             Payment payment = paymentRepository.findById(paymentId)
                     .orElse(null);
@@ -65,16 +63,26 @@ public class PaymentQueueWorker {
                 return;
             }
 
-            // QUEUED가 아닌 상태면 스킵 (중복 처리 방지)
-            if (payment.getStatus() != com.mudosa.musinsa.payment.domain.model.PaymentStatus.QUEUED) {
+            // QUEUED가 아닌 상태면 스킵
+            if (!payment.isQueue()) {
                 log.warn("[PaymentQueueWorker] QUEUED 상태가 아님: paymentId={}, status={}", paymentId, payment.getStatus());
                 return;
             }
 
+            // 외부 API 제한에 맞추기
+            if (!paymentQueueService.tryAcquireRateSlot(paymentId)) {
+                safeRequeue(paymentId, originalScore);
+                return;
+            }
+
+            // 상태 전이
+            processingStarted = paymentConfirmService.startProcessingIfQueued(paymentId, payment.getUserId());
+            if (!processingStarted) return;
+
             // PG 승인 요청을 위한 Request 조립
             PaymentConfirmRequest pgRequest = PaymentConfirmRequest.builder()
                     .paymentKey(payment.getPgTransactionId())
-                    .orderNo(String.valueOf(payment.getOrderId()))
+                    .orderNo(payment.getOrderNo())
                     .amount(payment.getAmount().longValue())
                     .build();
 
@@ -93,17 +101,21 @@ public class PaymentQueueWorker {
 
         } catch (BusinessException e) {
             log.error("[PaymentQueueWorker] 결제 처리 실패: paymentId={}, error={}", paymentId, e.getMessage());
-            handlePaymentFailure(paymentId, e.getMessage());
+            if (processingStarted) {
+                handlePaymentFailure(paymentId, e.getMessage());
+            } else {
+                safeRequeue(paymentId, originalScore);
+            }
         } catch (Exception e) {
             log.error("[PaymentQueueWorker] 결제 처리 중 예상치 못한 오류: paymentId={}", paymentId, e);
-            handlePaymentFailure(paymentId, "시스템 오류로 결제 처리에 실패했습니다");
+            if (processingStarted) {
+                handlePaymentFailure(paymentId, "시스템 오류로 결제 처리에 실패했습니다");
+            } else {
+                safeRequeue(paymentId, originalScore);
+            }
         }
     }
 
-    /**
-     * 결제 실패 보상 트랜잭션
-     * 재고 복구 + 결제 실패 처리
-     */
     private void handlePaymentFailure(Long paymentId, String errorMessage) {
         try {
             Payment payment = paymentRepository.findById(paymentId).orElse(null);
@@ -130,6 +142,15 @@ public class PaymentQueueWorker {
         } catch (Exception e) {
             log.error("[PaymentQueueWorker] paymentId 파싱 실패: value={}", tuple.getValue(), e);
             return null;
+        }
+    }
+
+    private void safeRequeue(Long paymentId, Double originalScore) {
+        try {
+            paymentQueueService.requeue(paymentId, originalScore);
+        } catch (Exception e) {
+            // Redis가 내려가도 DB는 QUEUED 상태이므로 Reconciler가 복구한다.
+            log.warn("[PaymentQueueWorker] 재큐잉 실패(복구 대기): paymentId={}", paymentId, e);
         }
     }
 }

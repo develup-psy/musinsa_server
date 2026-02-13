@@ -60,7 +60,7 @@ public class PaymentController {
 	}
 
 	@Operation(
-			summary = "결제 승인 (대기열 기반)",
+			summary = "대기열 기반 결제 승인",
 			description = "대기열 기반 비동기 결제 승인 요청. 대기 순번 및 예상 시간 포함")
 	@PostMapping("/confirm/queue")
 	public ResponseEntity<ApiResponse<PaymentQueueResponse>> confirmPaymentAsync(
@@ -82,7 +82,8 @@ public class PaymentController {
 			@PathVariable Long paymentId,
 			@AuthenticationPrincipal CustomUserDetails userDetails) {
 
-		PaymentStatusResponse response = paymentService.getPaymentStatus(paymentId);
+		Long userId = userDetails.getUserId();
+		PaymentStatusResponse response = paymentService.getPaymentStatus(paymentId, userId);
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}
 }

@@ -1,6 +1,5 @@
 package com.mudosa.musinsa.config;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.beans.factory.annotation.Value;
@@ -75,6 +74,14 @@ public class RedisConfig {
     DefaultRedisScript<String> script = new DefaultRedisScript<>();
     script.setLocation(new ClassPathResource("scripts/enqueue-payment.lua"));
     script.setResultType(String.class);
+    return script;
+  }
+
+  @Bean
+  public RedisScript<Long> acquireRateSlotScript() {
+    DefaultRedisScript<Long> script = new DefaultRedisScript<>();
+    script.setLocation(new ClassPathResource("scripts/acquire-rate-slot.lua"));
+    script.setResultType(Long.class);
     return script;
   }
 }

@@ -15,12 +15,10 @@ public class EnqueueResult {
         return "QUEUED".equals(status);
     }
 
-    public boolean isRejected() {
-        return "REJECTED".equals(status);
-    }
-
-    public int estimateWaitSeconds(int pgTps) {
-        if (rank <= 0) return 0;
-        return (int) (rank / pgTps) + 1;
+    public long estimateWaitSeconds(long pgTps) {
+        if (rank < 0) {
+            return 0;
+        }
+        return (rank / pgTps) + 1;
     }
 }
