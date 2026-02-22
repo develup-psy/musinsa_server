@@ -27,7 +27,7 @@ public class PaymentQueueWorker {
 
     @Scheduled(fixedDelayString = "${pg.queue.worker-delay-millis:200}")
     public void processQueue() {
-        Set<ZSetOperations.TypedTuple<Object>> batch;
+        Set<ZSetOperations.TypedTuple<String>> batch;
         try {
             batch = paymentQueueService.popBatch();
         } catch (Exception e) {
@@ -132,13 +132,13 @@ public class PaymentQueueWorker {
         }
     }
 
-    private Long parsePaymentId(ZSetOperations.TypedTuple<Object> tuple) {
+    private Long parsePaymentId(ZSetOperations.TypedTuple<String> tuple) {
         try {
-            Object value = tuple.getValue();
-            if (value instanceof Number) {
-                return ((Number) value).longValue();
+            String value = tuple.getValue();
+            if (value == null) {
+                return null;
             }
-            return Long.parseLong(value.toString().replaceAll("\"", ""));
+            return Long.parseLong(value);
         } catch (Exception e) {
             log.error("[PaymentQueueWorker] paymentId 파싱 실패: value={}", tuple.getValue(), e);
             return null;

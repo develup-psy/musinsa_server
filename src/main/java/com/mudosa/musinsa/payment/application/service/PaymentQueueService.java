@@ -9,7 +9,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Component;
@@ -25,7 +25,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class PaymentQueueService {
 
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final StringRedisTemplate redisTemplate;
     private final RedisScript<String> enqueuePaymentScript;
     private final RedisScript<Long> acquireRateSlotScript;
     private final ObjectMapper objectMapper;
@@ -60,7 +60,7 @@ public class PaymentQueueService {
         return parseEnqueueResult(result);
     }
 
-    public Set<ZSetOperations.TypedTuple<Object>> popBatch() {
+    public Set<ZSetOperations.TypedTuple<String>> popBatch() {
         return redisTemplate.opsForZSet().popMin(DEFAULT_QUEUE_KEY, batchSize);
     }
 

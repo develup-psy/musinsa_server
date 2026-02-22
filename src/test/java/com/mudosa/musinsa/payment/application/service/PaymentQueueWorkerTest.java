@@ -42,8 +42,8 @@ class PaymentQueueWorkerTest {
     @DisplayName("Rate slot 획득 실패 시 PG 호출 없이 재큐잉한다")
     @Test
     void processQueue_RequeueWhenRateSlotDenied() {
-        Set<ZSetOperations.TypedTuple<Object>> batch = Set.of(
-                new DefaultTypedTuple<>(1L, 1000d)
+        Set<ZSetOperations.TypedTuple<String>> batch = Set.of(
+                new DefaultTypedTuple<>("1", 1000d)
         );
 
         Payment payment = Payment.createQueued(
@@ -69,8 +69,8 @@ class PaymentQueueWorkerTest {
     @DisplayName("Rate slot 획득 및 처리 시작 성공 시 PG 승인 후 APPROVED 처리한다")
     @Test
     void processQueue_ApproveWhenRateSlotAllowed() {
-        Set<ZSetOperations.TypedTuple<Object>> batch = Set.of(
-                new DefaultTypedTuple<>(2L, 2000d)
+        Set<ZSetOperations.TypedTuple<String>> batch = Set.of(
+                new DefaultTypedTuple<>("2", 2000d)
         );
 
         Payment payment = Payment.createQueued(
@@ -103,9 +103,9 @@ class PaymentQueueWorkerTest {
     @DisplayName("배치 내 결제는 순서보다 처리량을 우선해 모두 처리한다")
     @Test
     void processQueue_ProcessesAllInBatchWithParallelStrategy() {
-        Set<ZSetOperations.TypedTuple<Object>> batch = Set.of(
-                new DefaultTypedTuple<>(2L, 2000d),
-                new DefaultTypedTuple<>(1L, 1000d)
+        Set<ZSetOperations.TypedTuple<String>> batch = Set.of(
+                new DefaultTypedTuple<>("2", 2000d),
+                new DefaultTypedTuple<>("1", 1000d)
         );
 
         Payment first = Payment.createQueued(
