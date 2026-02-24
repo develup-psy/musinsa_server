@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.data.redis.core.script.RedisScript;
@@ -26,7 +27,9 @@ import java.util.UUID;
 public class PaymentQueueService {
 
     private final StringRedisTemplate redisTemplate;
+    @Qualifier("enqueuePaymentScript")
     private final RedisScript<String> enqueuePaymentScript;
+    @Qualifier("acquireRateSlotScript")
     private final RedisScript<Long> acquireRateSlotScript;
     private final ObjectMapper objectMapper;
 
