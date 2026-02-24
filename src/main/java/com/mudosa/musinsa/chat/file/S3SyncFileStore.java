@@ -4,6 +4,7 @@ import com.mudosa.musinsa.chat.event.TempUploadedFile;
 import io.micrometer.tracing.Span;
 import io.micrometer.tracing.Tracer;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -18,6 +19,7 @@ import java.util.concurrent.CompletableFuture;
 
 @Component
 @Slf4j
+@ConditionalOnProperty(name = "app.file-store.provider", havingValue = "s3")
 public class S3SyncFileStore extends AbstractS3Store implements FileStore {
 
   private final S3Client s3Client;

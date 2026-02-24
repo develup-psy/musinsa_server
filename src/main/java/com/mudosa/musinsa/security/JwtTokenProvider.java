@@ -7,12 +7,17 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtTokenProvider {
@@ -32,9 +37,31 @@ public class JwtTokenProvider {
 
     @PostConstruct
     public void init() {
-        byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
+        byte[] keyBytes = resolveKeyBytes(jwtSecret);
         secretKey = Keys.hmacShaKeyFor(keyBytes);
         jwtParser = Jwts.parser().verifyWith(secretKey).build();
+    }
+
+    private byte[] resolveKeyBytes(String secret) {
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException("JWT secret must not be blank");
+        }
+
+        try {
+            byte[] decoded = Decoders.BASE64.decode(secret);
+            if (decoded.length >= 32) {
+                return decoded;
+            }
+            log.warn("JWT secret is Base64 but too short. Fallback to SHA-256 digest key.");
+        } catch (RuntimeException e) {
+            log.warn("JWT secret is not Base64. Fallback to SHA-256 digest key.");
+        }
+
+        try {
+            return MessageDigest.getInstance("SHA-256").digest(secret.getBytes(StandardCharsets.UTF_8));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("Failed to initialize JWT signing key", e);
+        }
     }
 
     /* accessToken 생성 */

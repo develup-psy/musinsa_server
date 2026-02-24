@@ -11,6 +11,7 @@ import com.mudosa.musinsa.notification.repository.NotificationMetadataRepository
 import com.mudosa.musinsa.notification.repository.NotificationRepository;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,7 +28,7 @@ import java.util.Objects;
 public class NotificationService {
   private final NotificationRepository notificationRepository;
   private final NotificationMetadataRepository notificationMetadataRepository;
-  private final FcmService fcmService;
+  private final ObjectProvider<FcmService> fcmServiceProvider;
   private final FirebaseTokenService firebaseTokenService;
   private final ChatPartRepository chatPartRepository;
 
@@ -65,11 +66,11 @@ public class NotificationService {
 
     List<Notification> notifications = notificationRepository.saveAll(notificationList);
 
+    FcmService fcmService = fcmServiceProvider.getIfAvailable();
     if (fcmService != null && !notificationList.isEmpty()) {
       fcmService.sendMessageByToken(notificationList.getFirst().getNotificationTitle(), message, firebaseTokenService.readFirebaseTokens(userIds));
     } else {
-      log.info("알림 생성 중 문제가 발생했습니다.");
-      return null;
+      log.info("FCM 서비스가 비활성화되어 있어 푸시 전송은 건너뜁니다.");
     }
     return notifications;
   }
