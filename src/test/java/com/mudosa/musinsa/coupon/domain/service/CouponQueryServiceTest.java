@@ -1,12 +1,13 @@
 package com.mudosa.musinsa.coupon.domain.service;
 
 import com.mudosa.musinsa.ServiceConfig;
-import com.mudosa.musinsa.coupon.domain.model.Coupon;
-import com.mudosa.musinsa.coupon.domain.model.DiscountType;
-import com.mudosa.musinsa.coupon.domain.model.MemberCoupon;
-import com.mudosa.musinsa.coupon.domain.repository.CouponRepository;
-import com.mudosa.musinsa.coupon.domain.service.CouponListService;
-import com.mudosa.musinsa.coupon.domain.repository.MemberCouponRepository;
+import com.mudosa.musinsa.coupon.model.Coupon;
+import com.mudosa.musinsa.coupon.model.DiscountType;
+import com.mudosa.musinsa.coupon.model.MemberCoupon;
+import com.mudosa.musinsa.coupon.repository.CouponRepository;
+import com.mudosa.musinsa.coupon.repository.MemberCouponRepository;
+import com.mudosa.musinsa.coupon.service.CouponListService;
+import com.mudosa.musinsa.coupon.presentation.dto.res.MemberCouponResDto;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,12 +65,13 @@ class CouponQueryServiceTest extends ServiceConfig {
         memberCouponRepository.save(memberCoupon2);
 
         // when
-        List<MemberCoupon> result = couponListService.getMemberCoupons(userId);
+        List<MemberCouponResDto> result = couponListService.getMemberCoupons(userId);
 
         // then
         assertThat(result).hasSize(2);
-        assertThat(result).extracting(mc -> mc.getCoupon().getCouponName())
+        assertThat(result).extracting(MemberCouponResDto::getCouponName)
                 .contains("테스트 쿠폰1", "테스트 쿠폰2");
+
     }
 
     @Test
@@ -94,7 +96,7 @@ class CouponQueryServiceTest extends ServiceConfig {
         memberCouponRepository.save(memberCoupon);
 
         // when
-        List<MemberCoupon> result = couponListService.getAvailableMemberCoupons(userId);
+        List<MemberCouponResDto> result = couponListService.getAvailableMemberCoupons(userId);
 
         // then
         // MemberCoupon.issue()에서 expiredAt이 현재 시간으로 설정되므로
@@ -109,7 +111,7 @@ class CouponQueryServiceTest extends ServiceConfig {
         Long nonExistentUserId = 999999L;
 
         // when
-        List<MemberCoupon> result = couponListService.getMemberCoupons(nonExistentUserId);
+        List<MemberCouponResDto> result = couponListService.getMemberCoupons(nonExistentUserId);
 
         // then
         assertThat(result).isEmpty();
@@ -122,7 +124,7 @@ class CouponQueryServiceTest extends ServiceConfig {
         Long nonExistentUserId = 999999L;
 
         // when
-        List<MemberCoupon> result = couponListService.getAvailableMemberCoupons(nonExistentUserId);
+        List<MemberCouponResDto> result = couponListService.getAvailableMemberCoupons(nonExistentUserId);
 
         // then
         assertThat(result).isEmpty();

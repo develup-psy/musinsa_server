@@ -1,9 +1,9 @@
 package com.mudosa.musinsa.event.service;
 
 import com.mudosa.musinsa.ServiceConfig;
-import com.mudosa.musinsa.coupon.domain.model.Coupon;
-import com.mudosa.musinsa.coupon.domain.model.DiscountType;
-import com.mudosa.musinsa.coupon.domain.repository.CouponRepository;
+import com.mudosa.musinsa.coupon.model.Coupon;
+import com.mudosa.musinsa.coupon.model.DiscountType;
+import com.mudosa.musinsa.coupon.repository.CouponRepository;
 import com.mudosa.musinsa.event.model.Event;
 import com.mudosa.musinsa.event.model.EventImage;
 import com.mudosa.musinsa.event.presentation.dto.res.EventListResDto;
@@ -17,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;

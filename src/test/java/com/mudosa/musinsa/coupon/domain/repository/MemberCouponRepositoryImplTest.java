@@ -1,9 +1,11 @@
 package com.mudosa.musinsa.coupon.domain.repository;
 
 import com.mudosa.musinsa.ServiceConfig;
-import com.mudosa.musinsa.coupon.domain.model.Coupon;
-import com.mudosa.musinsa.coupon.domain.model.DiscountType;
-import com.mudosa.musinsa.coupon.domain.model.MemberCoupon;
+import com.mudosa.musinsa.coupon.model.Coupon;
+import com.mudosa.musinsa.coupon.model.DiscountType;
+import com.mudosa.musinsa.coupon.model.MemberCoupon;
+import com.mudosa.musinsa.coupon.repository.CouponRepository;
+import com.mudosa.musinsa.coupon.repository.MemberCouponRepository;
 import com.mudosa.musinsa.order.application.dto.OrderMemberCoupon;
 import com.mudosa.musinsa.user.domain.model.User;
 import com.mudosa.musinsa.user.domain.model.UserRole;
@@ -18,7 +20,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
 
 @Transactional
 class MemberCouponRepositoryImplTest extends ServiceConfig {

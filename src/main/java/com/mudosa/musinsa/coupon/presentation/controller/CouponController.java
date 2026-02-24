@@ -1,7 +1,6 @@
 package com.mudosa.musinsa.coupon.presentation.controller;
 
-import com.mudosa.musinsa.coupon.domain.model.MemberCoupon;
-import com.mudosa.musinsa.coupon.domain.service.CouponListService;
+import com.mudosa.musinsa.coupon.service.CouponListService;
 import com.mudosa.musinsa.coupon.presentation.dto.res.MemberCouponResDto;
 import com.mudosa.musinsa.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +10,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/coupons")
@@ -32,11 +30,10 @@ public class CouponController {
     ) {
         log.info("사용자 쿠폰 목록 조회 요청 - userId: {}", user != null ? user.getUserId() : "null");
 
-        List<MemberCoupon> memberCoupons = couponListService.getMemberCoupons(user.getUserId());
 
-        List<MemberCouponResDto> response = memberCoupons.stream()
-                .map(MemberCouponResDto::from)
-                .collect(Collectors.toList());
+        // Service에서 이미 DTO로 변환된 데이터를 받음
+        List<MemberCouponResDto> response = couponListService.getMemberCoupons(user.getUserId());
+
 
         log.info("사용자 쿠폰 목록 조회 완료 - userId: {}, 쿠폰 개수: {}", user.getUserId(), response.size());
         return ResponseEntity.ok(response);
@@ -52,11 +49,7 @@ public class CouponController {
     ) {
         log.info("사용자 사용 가능 쿠폰 목록 조회 요청 - userId: {}", user != null ? user.getUserId() : "null");
 
-        List<MemberCoupon> memberCoupons = couponListService.getAvailableMemberCoupons(user.getUserId());
-
-        List<MemberCouponResDto> response = memberCoupons.stream()
-                .map(MemberCouponResDto::from)
-                .collect(Collectors.toList());
+        List<MemberCouponResDto> response = couponListService.getAvailableMemberCoupons(user.getUserId());
 
         log.info("사용자 사용 가능 쿠폰 목록 조회 완료 - userId: {}, 쿠폰 개수: {}", user.getUserId(), response.size());
         return ResponseEntity.ok(response);

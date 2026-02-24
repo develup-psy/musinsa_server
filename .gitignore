@@ -58,3 +58,6 @@ docker-compose.override.yml
 
 ### Redis-cache ###
 dump.rdb
+
+# Service Account Keys
+src/main/resources/key/fdbdproject.json

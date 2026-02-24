@@ -1,8 +1,8 @@
 package com.mudosa.musinsa.notification.api.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mudosa.musinsa.notification.domain.controller.NotificationController;
-import com.mudosa.musinsa.notification.domain.service.NotificationService;
+import com.mudosa.musinsa.notification.controller.NotificationController;
+import com.mudosa.musinsa.notification.service.NotificationService;
 import com.mudosa.musinsa.settlement.domain.repository.SettlementDailyMapper;
 import com.mudosa.musinsa.settlement.domain.repository.SettlementMonthlyMapper;
 import com.mudosa.musinsa.settlement.domain.repository.SettlementPerTransactionMapper;

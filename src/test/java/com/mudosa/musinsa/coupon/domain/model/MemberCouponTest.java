@@ -1,5 +1,9 @@
 package com.mudosa.musinsa.coupon.domain.model;
 
+import com.mudosa.musinsa.coupon.model.Coupon;
+import com.mudosa.musinsa.coupon.model.CouponStatus;
+import com.mudosa.musinsa.coupon.model.DiscountType;
+import com.mudosa.musinsa.coupon.model.MemberCoupon;
 import com.mudosa.musinsa.exception.BusinessException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
