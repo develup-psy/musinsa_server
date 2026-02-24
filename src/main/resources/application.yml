@@ -76,3 +76,15 @@ pg:
     reconcile-delay-millis: 5000
     sweeper-delay-millis: 5000
     processing-timeout-seconds: 30
+
+inventory:
+  stock-strategy: ${INVENTORY_STOCK_STRATEGY:redis_atomic_outbox}  # redisson_lock | redis_atomic_outbox
+  outbox:
+    worker:
+      enabled: true
+    worker-delay-millis: 200
+    batch-size: 200
+    retry:
+      max-retries: 5
+      initial-delay-millis: 500
+      max-delay-millis: 30000
