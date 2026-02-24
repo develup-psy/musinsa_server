@@ -10,7 +10,6 @@ import com.mudosa.musinsa.exception.ErrorCode;
 import com.mudosa.musinsa.order.domain.model.Order;
 import com.mudosa.musinsa.order.domain.model.OrderProduct;
 import com.mudosa.musinsa.order.domain.model.OrderStatus;
-import com.mudosa.musinsa.order.domain.repository.OrderProductRepository;
 import com.mudosa.musinsa.order.domain.repository.OrderRepository;
 import com.mudosa.musinsa.payment.application.dto.PaymentCreateDto;
 import com.mudosa.musinsa.payment.application.dto.PaymentCreationResult;
@@ -72,9 +71,6 @@ class PaymentServiceTest extends ServiceConfig {
     private ProductRepository productRepository;
 
     @Autowired
-    private OrderProductRepository orderProductRepository;
-
-    @Autowired
     private InventoryRepository inventoryRepository;
 
     @Autowired
@@ -126,7 +122,7 @@ class PaymentServiceTest extends ServiceConfig {
                 .build();
 
         //when
-        PaymentCreationResult result = paymentConfirmService.createPaymentTransaction(request, user.getId());
+        PaymentCreationResult result = paymentConfirmService.createPayment(request, user.getId());
 
         //then
         assertThat(result)
@@ -160,7 +156,7 @@ class PaymentServiceTest extends ServiceConfig {
                 .build();
 
         //when & then
-        assertThatThrownBy(() -> paymentConfirmService.createPaymentTransaction(request, user.getId()))
+        assertThatThrownBy(() -> paymentConfirmService.createPayment(request, user.getId()))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("존재하지 않는 주문입니다");
     }
@@ -193,7 +189,7 @@ class PaymentServiceTest extends ServiceConfig {
                 .build();
 
         //when & then
-        assertThatThrownBy(() -> paymentConfirmService.createPaymentTransaction(request, user.getId()))
+        assertThatThrownBy(() -> paymentConfirmService.createPayment(request, user.getId()))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("부족");
 
@@ -327,7 +323,7 @@ class PaymentServiceTest extends ServiceConfig {
 
         // when & then
         assertThatThrownBy(() -> {
-            paymentService.confirmPaymentAndCompleteOrder(request, user.getId());
+            paymentService.confirmPayment(request, user.getId());
         }).isInstanceOf(BusinessException.class)
                 .hasMessage("존재하지 않는 주문입니다");
 
@@ -352,7 +348,7 @@ class PaymentServiceTest extends ServiceConfig {
                 .build();
 
         //when
-        assertThatThrownBy(() -> paymentService.confirmPaymentAndCompleteOrder(request, testData.userId))
+        assertThatThrownBy(() -> paymentService.confirmPayment(request, testData.userId))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("PG사 승인 거부");
 
@@ -378,7 +374,7 @@ class PaymentServiceTest extends ServiceConfig {
                 .build();
 
         //when
-        assertThatThrownBy(() -> paymentService.confirmPaymentAndCompleteOrder(request, testData.userId))
+        assertThatThrownBy(() -> paymentService.confirmPayment(request, testData.userId))
                 .isInstanceOf(BusinessException.class);
 
         //then
@@ -404,7 +400,7 @@ class PaymentServiceTest extends ServiceConfig {
                 .build();
 
         //when
-        assertThatThrownBy(() -> paymentService.confirmPaymentAndCompleteOrder(request, testData.userId))
+        assertThatThrownBy(() -> paymentService.confirmPayment(request, testData.userId))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("PG사 승인 거부");
 
@@ -435,7 +431,7 @@ class PaymentServiceTest extends ServiceConfig {
                 .build();
 
         // when
-        assertThatThrownBy(() -> paymentService.confirmPaymentAndCompleteOrder(request, testData.userId))
+        assertThatThrownBy(() -> paymentService.confirmPayment(request, testData.userId))
                 .isInstanceOf(BusinessException.class);
 
         // then
@@ -465,7 +461,7 @@ class PaymentServiceTest extends ServiceConfig {
                 .build();
 
         // when
-        assertThatThrownBy(() -> paymentService.confirmPaymentAndCompleteOrder(request, testData.userId))
+        assertThatThrownBy(() -> paymentService.confirmPayment(request, testData.userId))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("결제 처리 시간 초과");
 
@@ -500,7 +496,7 @@ class PaymentServiceTest extends ServiceConfig {
                 .build();
 
         // when
-        assertThatThrownBy(() -> paymentService.confirmPaymentAndCompleteOrder(request, testData.userId))
+        assertThatThrownBy(() -> paymentService.confirmPayment(request, testData.userId))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("결제는 승인되었으나 후속 처리 중 오류가 발생했습니다. 고객센터로 문의해주세요.");
 
@@ -540,7 +536,7 @@ class PaymentServiceTest extends ServiceConfig {
                 .build();
 
         // when
-        PaymentConfirmResponse response = paymentService.confirmPaymentAndCompleteOrder(request, testData.userId);
+        PaymentConfirmResponse response = paymentService.confirmPayment(request, testData.userId);
 
         // then
         assertThat(response.getOrderNo()).isEqualTo(testData.orderNo);

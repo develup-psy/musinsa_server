@@ -43,4 +43,6 @@ public interface ProductOptionRepository extends JpaRepository<ProductOption, Lo
     boolean existsByProductIdAndOptionValueIds(@Param("productId") Long productId,
                                                @Param("sizeOptionValueId") Long sizeOptionValueId,
                                                @Param("colorOptionValueId") Long colorOptionValueId);
+
+
 }

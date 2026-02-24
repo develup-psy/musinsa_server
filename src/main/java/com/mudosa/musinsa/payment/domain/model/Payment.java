@@ -27,6 +27,8 @@ public class Payment extends BaseEntity{
     
     private Long orderId;
 
+    private String orderNo;
+
     @Enumerated(EnumType.STRING)
     @Column(name="payment_status")
     private PaymentStatus status;
@@ -41,6 +43,8 @@ public class Payment extends BaseEntity{
     private PgProvider pgProvider;
     
     private String pgTransactionId;
+
+    private Long userId;
     
     private LocalDateTime approvedAt;
     private LocalDateTime cancelledAt;
@@ -49,14 +53,16 @@ public class Payment extends BaseEntity{
     private List<PaymentLog> paymentLogs = new ArrayList<>();
 
     @Builder
-    private Payment(Long orderId, PaymentStatus status, String currency, String method, BigDecimal amount, PgProvider pgProvider, String pgTransactionId, LocalDateTime approvedAt, LocalDateTime cancelledAt, List<PaymentLog> paymentLogs) {
+    private Payment(Long orderId, String orderNo, PaymentStatus status, String currency, String method, BigDecimal amount, PgProvider pgProvider, String pgTransactionId, Long userId, LocalDateTime approvedAt, LocalDateTime cancelledAt, List<PaymentLog> paymentLogs) {
         this.orderId = orderId;
+        this.orderNo = orderNo;
         this.status = status;
         this.currency = currency != null ? currency : "KRW";
         this.method = method;
         this.amount = amount;
         this.pgProvider = pgProvider;
         this.pgTransactionId = pgTransactionId;
+        this.userId = userId;
         this.approvedAt = approvedAt;
         this.cancelledAt = cancelledAt;
         this.paymentLogs = (paymentLogs != null ? paymentLogs : new ArrayList<>());
@@ -64,6 +70,15 @@ public class Payment extends BaseEntity{
 
     public static Payment create(
             Long orderId,
+            BigDecimal amount,
+            PgProvider pgProvider,
+            Long userId) {
+        return create(orderId, String.valueOf(orderId), amount, pgProvider, userId);
+    }
+
+    public static Payment create(
+            Long orderId,
+            String orderNo,
             BigDecimal amount,
             PgProvider pgProvider,
             Long userId) {
@@ -83,12 +98,48 @@ public class Payment extends BaseEntity{
         Payment payment = Payment.builder()
                 .status(PaymentStatus.PENDING)
                 .orderId(orderId)
+                .orderNo(orderNo)
                 .pgProvider(pgProvider)
                 .amount(amount)
+                .userId(userId)
                 .build();
 
         //결제 로그 추가
         PaymentLog paymentLog = PaymentLog.create(payment, PaymentEventType.CREATED,null, userId);
+        payment.paymentLogs.add(paymentLog);
+
+        return payment;
+    }
+
+
+    public static Payment createQueued(
+            Long orderId,
+            String orderNo,
+            BigDecimal amount,
+            PgProvider pgProvider,
+            String paymentKey,
+            Long userId) {
+
+        validateRequiredParameters(orderId, amount, pgProvider, userId);
+
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessException(
+                    ErrorCode.PAYMENT_CREATE_FAILED,
+                    "결제 금액은 0보다 커야 합니다"
+            );
+        }
+
+        Payment payment = Payment.builder()
+                .status(PaymentStatus.QUEUED)
+                .orderId(orderId)
+                .orderNo(orderNo)
+                .pgProvider(pgProvider)
+                .pgTransactionId(paymentKey)
+                .amount(amount)
+                .userId(userId)
+                .build();
+
+        PaymentLog paymentLog = PaymentLog.create(payment, PaymentEventType.CREATED, "대기열 등록", userId);
         payment.paymentLogs.add(paymentLog);
 
         return payment;
@@ -116,6 +167,18 @@ public class Payment extends BaseEntity{
         this.status = this.status.fail();
 
         addLog(PaymentEventType.FAILED, errorMessage, userId);
+    }
+
+    public void startProcessing(Long userId) {
+        validateUserId(userId);
+        this.status = this.status.toPending();
+        addLog(PaymentEventType.APPROVAL_REQUESTED, "PG 승인 요청 시작", userId);
+    }
+
+    public void requeue(String reason, Long userId) {
+        validateUserId(userId);
+        this.status = this.status.requeue();
+        addLog(PaymentEventType.QUEUED, reason, userId);
     }
 
     public void cancel(String errorMessage, Long userId, LocalDateTime cancelledAt) {
@@ -147,6 +210,10 @@ public class Payment extends BaseEntity{
                     "사용자 ID는 필수입니다"
             );
         }
+    }
+
+    public boolean isQueue(){
+        return status.equals(PaymentStatus.QUEUED);
     }
 
     private static void validateRequiredParameters(Long orderId, BigDecimal amount, PgProvider pgProvider, Long userId) {

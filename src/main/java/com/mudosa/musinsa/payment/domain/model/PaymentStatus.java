@@ -4,11 +4,37 @@ import com.mudosa.musinsa.exception.BusinessException;
 import com.mudosa.musinsa.exception.ErrorCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Getter
 @RequiredArgsConstructor
 public enum PaymentStatus {
+    QUEUED("대기열 대기") {
+        @Override
+        public PaymentStatus approve() {
+            return APPROVED;
+        }
+
+        @Override
+        public PaymentStatus fail() {
+            return FAILED;
+        }
+
+        @Override
+        public PaymentStatus cancel() {
+            throw invalidTransition("취소");
+        }
+
+        @Override
+        public PaymentStatus toPending() {
+            return PENDING;
+        }
+
+        @Override
+        public PaymentStatus requeue() {
+            return QUEUED;
+        }
+    },
+
     PENDING("결제 대기") {
         @Override
         public PaymentStatus approve() {
@@ -23,6 +49,11 @@ public enum PaymentStatus {
         @Override
         public PaymentStatus cancel() {
             throw invalidTransition("취소");
+        }
+
+        @Override
+        public PaymentStatus requeue() {
+            return QUEUED;
         }
     },
 
@@ -94,8 +125,16 @@ public enum PaymentStatus {
     public abstract PaymentStatus fail();
     public abstract PaymentStatus cancel();
 
+    public PaymentStatus toPending() {
+        throw invalidTransition("대기 전환");
+    }
+
     public PaymentStatus rollback() {
         throw invalidTransition("재시도");
+    }
+
+    public PaymentStatus requeue() {
+        throw invalidTransition("재대기");
     }
 
     protected BusinessException invalidTransition(String action) {

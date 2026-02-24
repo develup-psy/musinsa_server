@@ -46,7 +46,7 @@ public class Product extends BaseEntity {
     @Column(name = "is_available", nullable = false)
     private Boolean isAvailable;
 
-    @Column(name = "default_price", nullable = false, precision = 10, scale = 2)
+    @Column(name = "default_price", precision = 10, scale = 2)
     private BigDecimal defaultPrice;
 
     @Column(name = "thumbnail_image", length = 2048)

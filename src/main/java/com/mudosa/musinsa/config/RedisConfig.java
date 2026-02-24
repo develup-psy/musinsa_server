@@ -1,20 +1,20 @@
 package com.mudosa.musinsa.config;
 
-import org.redisson.Redisson;
-import org.redisson.api.RedissonClient;
-import org.redisson.config.Config;
-import org.redisson.config.SingleServerConfig;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 @Configuration
 public class RedisConfig {
@@ -46,59 +46,42 @@ public class RedisConfig {
   }
 
   @Bean
-  public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
+  public ObjectMapper objectMapper(Jackson2ObjectMapperBuilder builder) {
+    ObjectMapper mapper = builder.build();
+    mapper.registerModule(new JavaTimeModule());
+    return mapper;
+  }
+
+  @Bean
+  public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory, ObjectMapper objectMapper) {
     RedisTemplate<String, Object> template = new RedisTemplate<>();
     template.setConnectionFactory(connectionFactory);
 
+    // ObjectMapper를 사용하여 GenericJackson2JsonRedisSerializer 인스턴스 생성
+    GenericJackson2JsonRedisSerializer serializer = new GenericJackson2JsonRedisSerializer(objectMapper);
+
     template.setKeySerializer(new StringRedisSerializer());
-    template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+    template.setValueSerializer(serializer); // 커스텀 Serializer 사용
     template.setHashKeySerializer(new StringRedisSerializer());
-    template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer());
+    template.setHashValueSerializer(serializer); // 커스텀 Serializer 사용
 
     template.afterPropertiesSet();
     return template;
   }
 
+  @Bean
+  public RedisScript<String> enqueuePaymentScript() {
+    DefaultRedisScript<String> script = new DefaultRedisScript<>();
+    script.setLocation(new ClassPathResource("scripts/enqueue-payment.lua"));
+    script.setResultType(String.class);
+    return script;
+  }
 
-    /*
-     * StringRedisTemplate 추가 (쿠폰 발급용), set연산 최적화
-     */
-
-    @Bean
-    public StringRedisTemplate stringRedisTemplate(RedisConnectionFactory connectionFactory) {
-        return  new StringRedisTemplate(connectionFactory);
-    }
-
-    /*
-     * Redisson 클라이언트 추가 (분산 락용)
-     */
-
-    @Bean
-    public RedissonClient redissonClient(){
-
-        Config config = new Config();
-
-        String address = "redis://" + redisHost + ":" + redisPort;
-
-        // useSingleServer()를 한 번만 호출하고 객체를 변수에 저장
-        SingleServerConfig singleServerConfig = config.useSingleServer();
-
-        singleServerConfig
-                .setAddress(address)
-                .setDatabase(redisDatabase)
-                .setConnectionPoolSize(50)
-                .setConnectionMinimumIdleSize(10)
-                .setRetryAttempts(3)
-                .setRetryInterval(1500)
-                .setTimeout(3000);
-
-        // 패스워드가 있으면 설정
-        if (redisPassword != null && !redisPassword.isEmpty()) {
-            singleServerConfig.setPassword(redisPassword);
-        }
-
-        return Redisson.create(config);
-    }
-
+  @Bean
+  public RedisScript<Long> acquireRateSlotScript() {
+    DefaultRedisScript<Long> script = new DefaultRedisScript<>();
+    script.setLocation(new ClassPathResource("scripts/acquire-rate-slot.lua"));
+    script.setResultType(Long.class);
+    return script;
+  }
 }
-

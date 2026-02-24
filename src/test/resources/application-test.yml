@@ -4,12 +4,12 @@ spring:
     url: jdbc:h2:mem:~/ServerApplication
     username: sa
     password:
-  # data:
-  #   redis:
-  #     host: ${REDIS_HOST:localhost}
-  #     port: ${REDIS_PORT:6379}
-  #     password: ${REDIS_PASSWORD:}
-  #     database: 15
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 15
 
   jpa:
     hibernate:
@@ -56,7 +56,12 @@ aws:
     accessKey: s3_access_key
     secretKey: s3_secret_key
 
-# # redis test
-# cache:
-#   preload:
-#     enabled: false # 테스트 하고싶으면 true
+# redis test 
+cache:
+  preload:
+    enabled: false # 테스트 하고싶으면 true
+
+payment:
+  queue:
+    worker:
+      enabled: false

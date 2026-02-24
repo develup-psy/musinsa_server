@@ -1,27 +1,23 @@
-server:
-  tomcat:
-    max-connections: 50000
-    accept-count: 4096
-
 spring:
   profiles:
-    active: dev
+    active: local
   data:
     redis:
-      host: ${REDIS_HOST}
+      host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
-  kafka:
-    bootstrap-servers: localhost:9092
-  rabbitmq:
-    host: ${RABBIT_HOST}
-    port: 61613
-    username: guest
-    password: guest
-
+      database: 0
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 50
+          max-idle: 50
+          min-idle: 10
+          max-wait: 3000ms
+  
   application:
     name: musinsa-server
-
+  
   jpa:
     properties:
       hibernate:
@@ -53,16 +49,10 @@ springdoc:
   default-produces-media-type: application/json
   show-actuator: false
 
-logging:
-  level:
-    org.hibernate.sql: debug
-    com.mudosa.musinsa.event.service.EventStatusService: INFO
-
 jwt:
   secret: ${JWT_SECRET:this-is-a-secret}
-  expiration: ${JWT_ACCESS_EXPIRATION:86400000}    # 24시간 (개발용 기본값)
-  refresh-expiration: ${JWT_REFRESH_EXPIRATION:2592000000}  # 30일 (개발용 기본값)
-
+  expiration: ${JWT_ACCESS_EXPIRATION:86400000}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:2592000000}
 
 aws:
   s3:
@@ -70,17 +60,27 @@ aws:
     accessKey: ${S3_ACCESS_KEY}
     secretKey: ${S3_SECRET_KEY}
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: prometheus, health, info
+payment:
+  pg-provider: toss
+  queue:
+    worker:
+      enabled: true
 
-  tracing:
-    enabled: true
-    sampling:
-      probability: 1.0
+app:
+  file-store:
+    provider: ${FILE_STORE_PROVIDER:local}
+    mode: ${FILE_STORE_MODE:async}
 
-#  otlp:
-#    tracing:
-#      endpoint: http://localhost:4318/v1/traces #21 대신 본인 포트로
+fcm:
+  enabled: ${FCM_ENABLED:false}
+
+pg:
+  rate-limit:
+    max-requests: 100        # TossPayments Rate Limit (TPS)
+    window-millis: 1000
+  queue:
+    batch-size: 100
+    worker-delay-millis: 200
+    reconcile-delay-millis: 5000
+    sweeper-delay-millis: 5000
+    processing-timeout-seconds: 30

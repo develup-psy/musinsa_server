@@ -1,11 +1,10 @@
 package com.mudosa.musinsa.order.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.mudosa.musinsa.common.domain.model.BaseEntity;
 import com.mudosa.musinsa.common.vo.Money;
 import com.mudosa.musinsa.exception.BusinessException;
 import com.mudosa.musinsa.exception.ErrorCode;
-import com.mudosa.musinsa.order.application.dto.InsufficientStockItem;
-import com.mudosa.musinsa.order.application.dto.OrderCreateItem;
 import com.mudosa.musinsa.product.domain.model.ProductOption;
 import com.mudosa.musinsa.user.domain.model.User;
 import jakarta.persistence.*;
@@ -13,16 +12,12 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.aspectj.weaver.ast.Or;
 import org.springframework.data.annotation.CreatedDate;
-
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
 
 @Entity
 @Table(name = "orders")
@@ -39,7 +34,8 @@ public class Order extends BaseEntity {
     private Long couponId;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<OrderProduct> orderProducts = new ArrayList<>();
+    @JsonManagedReference
+    private List<OrderProduct> orderProducts;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "order_status")
@@ -58,12 +54,21 @@ public class Order extends BaseEntity {
     @CreatedDate
     private LocalDateTime registeredAt;
 
-    private Boolean isSettleable = false;
+    private Boolean isSettleable;
 
     private LocalDateTime settledAt;
 
+    @Column(name = "shipping_name")
+    private String shippingName;
+
+    @Column(name = "shipping_address")
+    private String shippingAddress;
+
+    @Column(name = "shipping_phone")
+    private String shippingPhone;
+
     @Builder
-    private Order(Long userId, Long couponId, OrderStatus status, String orderNo, Money totalPrice, Money totalDiscount, LocalDateTime registeredAt, Boolean isSettleable, LocalDateTime settledAt, List<OrderProduct> orderProducts) {
+    private Order(Long userId, Long couponId, OrderStatus status, String orderNo, Money totalPrice, Money totalDiscount, LocalDateTime registeredAt, Boolean isSettleable, LocalDateTime settledAt, List<OrderProduct> orderProducts, String shippingName, String shippingAddress, String shippingPhone) {
         this.userId = userId;
         this.couponId = couponId;
         this.status = status;
@@ -74,12 +79,16 @@ public class Order extends BaseEntity {
         this.isSettleable = isSettleable;
         this.settledAt = settledAt;
         this.orderProducts = orderProducts != null ? orderProducts : new ArrayList<>();
+        this.shippingName = shippingName;
+        this.shippingAddress = shippingAddress;
+        this.shippingPhone = shippingPhone;
     }
 
     public static Order create(
             Long userId,
             Long couponId,
-            Map<ProductOption, Integer> orderProductsWithQuantity
+            Map<ProductOption, Integer> orderProductsWithQuantity,
+            User user
     ) {
 
         if (orderProductsWithQuantity == null) {
@@ -93,6 +102,9 @@ public class Order extends BaseEntity {
                 .status(OrderStatus.PENDING)
                 .couponId(couponId)
                 .orderProducts(new ArrayList<>())
+                .shippingAddress(user.getCurrentAddress())
+                .shippingName(user.getUserName())
+                .shippingPhone(user.getContactNumber())
                 .build();
 
         //총 가격 초기 세팅

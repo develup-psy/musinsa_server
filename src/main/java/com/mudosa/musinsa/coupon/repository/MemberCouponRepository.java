@@ -8,19 +8,10 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface MemberCouponRepository extends JpaRepository<MemberCoupon, Long>,  MemberCouponRepositoryCustom{
-    
-    List<MemberCoupon> findByUserId(Long userId);
-
+public interface MemberCouponRepository extends JpaRepository<MemberCoupon, Long>, MemberCouponRepositoryCustom {
     Optional<MemberCoupon> findByUserIdAndCouponId(Long userId, Long couponId);
-
     long countByUserIdAndCouponId(Long userId,Long couponId);
-
     // 쿠폰별 전체 발급 개수 조회
     long countByCouponId(Long couponId);
-
     List<MemberCoupon> findAllByUserId(Long userId);
-
-
-
 }

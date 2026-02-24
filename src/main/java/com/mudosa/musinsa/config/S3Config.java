@@ -2,6 +2,7 @@ package com.mudosa.musinsa.config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -19,11 +20,12 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 @Slf4j
 @Configuration
+@ConditionalOnProperty(name = "app.file-store.provider", havingValue = "s3")
 public class S3Config {
 
-  @Value("${aws.s3.accessKey}")
+  @Value("${aws.s3.accessKey:}")
   private String accessKey;
-  @Value("${aws.s3.secretKey}")
+  @Value("${aws.s3.secretKey:}")
   private String secretKey;
   @Value("${aws.s3.region:ap-southeast-2}")
   private String region;

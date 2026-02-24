@@ -1,34 +1,29 @@
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME}
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3307}/${DB_NAME}?socketTimeout=30000
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
-  kafka:
-    bootstrap-servers: localhost:9092
-  rabbitmq:
-    host: ${RABBIT_HOST}
-    port: 61613
-    username: guest
-    password: guest
-    listener:
-      simple:
-        concurrency: 4     # 기본 1
-        max-concurrency: 16
-        prefetch: 20
-  hikari:
-    maximum-pool-size: 70
-    minimum-idle: 10
-    idle-timeout: 600000
-    max-lifetime: 1800000
-    connection-timeout: 30000
+    hikari:
+      maximum-pool-size: ${HIKARI_MAX_POOL_SIZE:200}
+      minimum-idle: ${HIKARI_MIN_IDLE:50}
+      connection-timeout: ${HIKARI_CONNECTION_TIMEOUT:20000}
+      max-lifetime: ${HIKARI_MAX_LIFETIME:270000}
+      keepalive-time: ${HIKARI_KEEPALIVE_TIME:240000}
+
+      register-mbeans: true
 
   jpa:
+    open-in-view: ${OPEN_IN_VIEW_ENABLED:false}
     hibernate:
       ddl-auto: none
-    properties:
-      hibernate:
-        format_sql: true
+
+  jmx:
+    enabled: true
+
+#  threads:
+#    virtual:
+#      enabled: true
 
 tosspayments:
   secret-key: test_gsk_docs_OaPz8L5KdmQXkzRz3y47BMw6
@@ -50,31 +45,120 @@ aws:
 server:
   port: 8080
   address: 0.0.0.0
+  tomcat:
+    max-threads: ${TOMCAT_MAX_THREADS:300}
+    max-connections: ${TOMCAT_MAX_CONNECTIONS:10000}
+    accept-count: ${TOMCAT_ACCEPT_COUNT:4096}
 
 management:
+  server:
+    port: ${SERVER_PORT:8080}
   endpoints:
     web:
       exposure:
-        include: prometheus, health, info
-
+        include: "*"
+  metrics:
+    enable:
+      tomcat: true
+      cache: true
+    cache:
+      instrument: true
+  observations:
+    enable:
+      spring:
+        security: ${OBSERVABILITY_ENABLED:true}
+  endpoint:
+    metrics:
+      enabled: true
   tracing:
-    enabled: true
+    enabled: ${TRACING_ENABLED:true}
     sampling:
-      probability: 1.0
+      probability: ${TRACING_SAMPLING_PROBABILITY:0.01}
 
-#  otlp:
-#    tracing:
-#      endpoint: http://localhost:4318/v1/traces #21 대신 본인 포트로
-#      timeout=30000:
+  otlp:
+    tracing:
+      endpoint: ${OTLP_TRACING_ENDPOINT:http://172.31.19.50:4318/v1/traces}
+
 
 logging:
   level:
     org:
       hibernate:
-        sql: debug
-        type.descriptor.sql.BasicBinder: TRACE
-        orm.jdbc.internal.LogicalConnectionImpl: DEBUG
-      springframework.orm.jpa: DEBUG
-      springframework.transaction: DEBUG
-      springframework.web.client.RestTemplate: DEBUG
-      com.mudosa.musinsa.common.client: DEBUG
+        sql: error
+        type.descriptor.sql.BasicBinder: error
+        orm.jdbc.internal.LogicalConnectionImpl: error
+      springframework.orm.jpa: error
+      springframework.transaction: error
+      springframework.web.client.RestTemplate: error
+      com.mudosa.musinsa.common.client: error
+    root: ${LOG_LEVEL_ROOT:warn}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: "dev & api"
+
+server:
+  port: ${API_SERVER_PORT:8080}
+  address: 0.0.0.0
+
+management:
+  server:
+    port: ${API_MANAGEMENT_PORT:${API_SERVER_PORT:8080}}
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when_authorized
+
+logging:
+  level:
+    root: ${API_LOG_LEVEL_ROOT:info}
+    com.mudosa.musinsa.payment: ${API_LOG_LEVEL_PAYMENT:info}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: "dev & worker"
+  main:
+    web-application-type: servlet
+
+server:
+  port: ${WORKER_SERVER_PORT:18080}
+  address: 0.0.0.0
+
+management:
+  server:
+    port: ${WORKER_MANAGEMENT_PORT:18081}
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when_authorized
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+logging:
+  level:
+    root: ${WORKER_LOG_LEVEL_ROOT:info}
+    com.mudosa.musinsa.payment.application.service.PaymentQueueWorker: ${WORKER_LOG_LEVEL_QUEUE_WORKER:info}
+    com.mudosa.musinsa.payment.application.service.PaymentQueueRecoveryWorker: ${WORKER_LOG_LEVEL_RECOVERY_WORKER:info}

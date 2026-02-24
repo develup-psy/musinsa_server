@@ -11,7 +11,7 @@ import com.mudosa.musinsa.order.application.dto.OrderCreateItem;
 import com.mudosa.musinsa.order.application.dto.PendingOrderResponse;
 import com.mudosa.musinsa.order.application.dto.request.OrderCreateRequest;
 import com.mudosa.musinsa.order.application.dto.response.OrderCreateResponse;
-import com.mudosa.musinsa.order.application.dto.response.OrderListResponse;
+import com.mudosa.musinsa.order.application.dto.response.OrderInfo;
 import com.mudosa.musinsa.order.domain.model.Order;
 import com.mudosa.musinsa.order.domain.model.OrderProduct;
 import com.mudosa.musinsa.order.domain.model.OrderStatus;
@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -224,7 +225,6 @@ class OrderServiceTest extends ServiceConfig {
 
         //when
         orderService.completeOrder(testOrderNo);
-
         //then
         Inventory result = inventoryRepository.findById(inventory.getInventoryId()).orElseThrow();
         assertThat(result.getStockQuantity().getValue()).isEqualTo(5);
@@ -252,6 +252,7 @@ class OrderServiceTest extends ServiceConfig {
         orderRepository.save(order);
 
         //when & then
+
         BusinessException thrown = catchThrowableOfType(() -> orderService.completeOrder(testOrderNo), BusinessException.class);
 
         assertThat(thrown).isNotNull();
@@ -443,7 +444,7 @@ class OrderServiceTest extends ServiceConfig {
         assertThat(orderRepository.findByOrderNo(orderNo)).isEmpty();
     }
 
-    @DisplayName("사용자의 주문 목록을 조회한다. ")
+    @DisplayName("사용자의 주문 목록을 페이징 조회한다.")
     @Test
     void fetchOrderList(){
         //given
@@ -451,10 +452,11 @@ class OrderServiceTest extends ServiceConfig {
         TestData data = createTestData(orderNo, 100, 2);
 
         //when
-        OrderListResponse orderListResponse = orderService.fetchOrderList(data.userId);
+        Page<OrderInfo> result = orderService.fetchOrderList(
+                data.userId, org.springframework.data.domain.PageRequest.of(0, 20));
 
         //then
-        assertThat(orderListResponse.getOrders())
+        assertThat(result.getContent())
                 .extracting("orderNo")
                 .containsExactlyInAnyOrder(orderNo);
     }

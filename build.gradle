@@ -28,7 +28,6 @@ repositories {
 
 dependencies {
     // Spring Boot Starters
-    implementation "me.paulschwarz:spring-dotenv:4.0.0"
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
     implementation 'org.springframework.boot:spring-boot-starter-security'
@@ -37,6 +36,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'org.springframework.boot:spring-boot-starter-batch'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-amqp'
+    implementation 'org.springframework.kafka:spring-kafka'
 
     // MyBatis
     implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.5'
@@ -53,9 +54,10 @@ dependencies {
     runtimeOnly 'com.mysql:mysql-connector-j'
 
     // Jaeger
-    implementation 'io.micrometer:micrometer-observation'
     implementation("io.micrometer:micrometer-tracing-bridge-otel")
+    implementation("io.micrometer:micrometer-tracing")
     implementation("io.opentelemetry:opentelemetry-exporter-otlp")
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
 
     // Lombok
     compileOnly 'org.projectlombok:lombok'
@@ -65,6 +67,13 @@ dependencies {
     implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+
+    //캐싱
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'com.github.ben-manes.caffeine:caffeine'
+
+    // reddison
+    implementation 'org.redisson:redisson-spring-boot-starter:3.27.0'
 
     // Swagger (SpringDoc OpenAPI)
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
@@ -87,19 +96,12 @@ dependencies {
 
     implementation platform("software.amazon.awssdk:bom:2.25.65") // 버전은 상황에 맞게
     implementation "software.amazon.awssdk:s3"
-
+    
     // https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp
     implementation 'com.squareup.okhttp3:okhttp:5.2.1'
     implementation 'io.micrometer:micrometer-registry-prometheus'
 
-    // broker test
-    implementation 'org.springframework.kafka:spring-kafka'               // KafkaTemplate
-    implementation 'org.springframework.boot:spring-boot-starter-amqp'    // AmqpTemplate (RabbitMQ)
-    implementation 'org.springframework.boot:spring-boot-starter-reactor-netty'
-
-    // redission (분산락)
-
-    implementation 'org.redisson:redisson-spring-boot-starter:3.23.5'
+    implementation 'org.apache.httpcomponents.client5:httpclient5'
 }
 
 
@@ -110,7 +112,6 @@ jacoco {
 
 tasks.named('test') {
     useJUnitPlatform()
-    // ignoreFailures = true
     finalizedBy jacocoTestReport
 }
 

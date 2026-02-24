@@ -1,66 +1,134 @@
 package com.mudosa.musinsa.order.domain.repository;
 
-import com.mudosa.musinsa.order.application.dto.OrderFlatDto;
+import com.mudosa.musinsa.order.application.dto.OrderDetail;
 import com.mudosa.musinsa.order.application.dto.OrderItem;
-import com.mudosa.musinsa.order.application.dto.QOrderFlatDto;
 import com.mudosa.musinsa.order.application.dto.QOrderItem;
+import com.mudosa.musinsa.order.application.dto.QOrderDetail;
 import com.mudosa.musinsa.order.domain.model.OrderStatus;
-import com.mudosa.musinsa.product.domain.model.ValueName;
-import com.querydsl.core.types.dsl.CaseBuilder;
-import com.querydsl.core.types.dsl.StringExpression;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import io.micrometer.observation.annotation.Observed;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 import static com.mudosa.musinsa.brand.domain.model.QBrand.brand;
 import static com.mudosa.musinsa.order.domain.model.QOrder.order;
 import static com.mudosa.musinsa.order.domain.model.QOrderProduct.orderProduct;
 import static com.mudosa.musinsa.product.domain.model.QImage.image;
-import static com.mudosa.musinsa.product.domain.model.QOptionValue.optionValue1;
 import static com.mudosa.musinsa.product.domain.model.QProduct.product;
 import static com.mudosa.musinsa.product.domain.model.QProductOption.productOption;
-import static com.mudosa.musinsa.product.domain.model.QProductOptionValue.productOptionValue;
 
 @Repository
 @RequiredArgsConstructor
-public class OrderRepositoryImpl implements OrderRepositoryCustom{
+public class OrderRepositoryImpl implements OrderRepositoryCustom {
 
     private final JPAQueryFactory queryFactory;
 
+    @Observed(name = "repository.findOrderItems", contextualName = "주문 상품 조회")
     @Override
     public List<OrderItem> findOrderItems(String orderNo) {
         return queryFactory
-                .select(createOrderItemProjection())
+                .select(new QOrderItem(
+                        productOption.productOptionId,
+                        brand.nameKo,
+                        product.productName,
+                        productOption.productPrice.amount,
+                        orderProduct.productQuantity,
+                        createThumbnailImageSubquery()
+                ))
                 .from(order)
                 .join(order.orderProducts, orderProduct)
                 .join(orderProduct.productOption, productOption)
                 .join(productOption.product, product)
                 .join(product.brand, brand)
-                .leftJoin(productOption.productOptionValues, productOptionValue)
-                .leftJoin(productOptionValue.optionValue, optionValue1)
                 .where(order.orderNo.eq(orderNo))
-                .groupBy(
-                        productOption.productOptionId,
-                        brand.nameKo,
-                        product.productName,
-                        productOption.productPrice.amount,
-                        orderProduct.productQuantity
-                )
                 .fetch();
     }
 
-    @Override
-    public List<OrderFlatDto> findFlatOrderListWithDetails(Long userId) {
-        StringExpression sizeValue = createSizeValueExpression();
-        StringExpression colorValue = createColorValueExpression();
-        JPQLQuery<String> imageOne = createThumbnailImageSubquery();
 
+    @Override
+    public long countOrdersByUser(Long userId) {
+        Long count = queryFactory
+                .select(order.count())
+                .from(order)
+                .where(
+                        order.userId.eq(userId),
+                        order.status.ne(OrderStatus.PENDING)
+                )
+                .fetchOne();
+        return count != null ? count : 0L;
+    }
+
+    @Observed(name = "repository.findOrderDetailsPaged", contextualName = "주문 목록 조회")
+    @Override
+    public List<OrderDetail> findOrderDetailsPaged(Long userId, Pageable pageable) {
+        List<Long> orderIds = queryFactory
+                .select(order.id)
+                .from(order)
+                .where(
+                        order.userId.eq(userId),
+                        order.status.ne(OrderStatus.PENDING)
+                )
+                .orderBy(order.registeredAt.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+        if (orderIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return fetchOrderDetailsByOrderIds(orderIds);
+    }
+
+
+    @Override
+    public long countOrdersByStatusAndDateRange(OrderStatus status, LocalDateTime from, LocalDateTime to) {
+        Long count = queryFactory
+                .select(order.count())
+                .from(order)
+                .where(
+                        statusEq(status),
+                        registeredAtBetween(from, to)
+                )
+                .fetchOne();
+        return count != null ? count : 0L;
+    }
+
+    @Observed(name = "repository.findOrderDetailsByDateRangePaged", contextualName = "관리자 주문 조회")
+    @Override
+    public List<OrderDetail> findOrderDetailsByStatusAndDateRangePaged(
+            OrderStatus status, LocalDateTime from, LocalDateTime to, Pageable pageable) {
+
+        List<Long> orderIds = queryFactory
+                .select(order.id)
+                .from(order)
+                .where(
+                        statusEq(status),
+                        registeredAtBetween(from, to)
+                )
+                .orderBy(order.registeredAt.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+        if (orderIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return fetchOrderDetailsByOrderIds(orderIds);
+    }
+
+    private List<OrderDetail> fetchOrderDetailsByOrderIds(List<Long> orderIds) {
         return queryFactory
-                .select(new QOrderFlatDto(
+                .select(new QOrderDetail(
                         order.orderNo,
                         order.status,
                         order.registeredAt,
@@ -70,53 +138,16 @@ public class OrderRepositoryImpl implements OrderRepositoryCustom{
                         product.productName,
                         productOption.productPrice.amount,
                         orderProduct.productQuantity,
-                        imageOne,
-                        sizeValue,
-                        colorValue
+                        createThumbnailImageSubquery()
                 ))
                 .from(order)
                 .join(order.orderProducts, orderProduct)
                 .join(orderProduct.productOption, productOption)
                 .join(productOption.product, product)
                 .join(product.brand, brand)
-                .leftJoin(productOption.productOptionValues, productOptionValue)
-                .leftJoin(productOptionValue.optionValue, optionValue1)
-                .where(order.userId.eq(userId).and(order.status.ne(OrderStatus.PENDING)))
-                .groupBy(
-                        order.orderNo, order.status, order.registeredAt, order.totalPrice.amount,
-                        productOption.productOptionId, brand.nameKo, product.productName,
-                        productOption.productPrice.amount, orderProduct.productQuantity
-                )
+                .where(order.id.in(orderIds))
+                .orderBy(order.registeredAt.desc())
                 .fetch();
-    }
-
-    private QOrderItem createOrderItemProjection() {
-        return new QOrderItem(
-                productOption.productOptionId,
-                brand.nameKo,
-                product.productName,
-                productOption.productPrice.amount,
-                orderProduct.productQuantity,
-                createThumbnailImageSubquery(),
-                createSizeValueExpression(),
-                createColorValueExpression()
-        );
-    }
-
-    private StringExpression createSizeValueExpression() {
-        return new CaseBuilder()
-                .when(optionValue1.optionName.eq(ValueName.SIZE.getName()))
-                .then(optionValue1.optionValue)
-                .otherwise((String) null)
-                .max();
-    }
-
-    private StringExpression createColorValueExpression() {
-        return new CaseBuilder()
-                .when(optionValue1.optionName.eq(ValueName.COLOR.getName()))
-                .then(optionValue1.optionValue)
-                .otherwise((String) null)
-                .max();
     }
 
     private JPQLQuery<String> createThumbnailImageSubquery() {
@@ -127,5 +158,22 @@ public class OrderRepositoryImpl implements OrderRepositoryCustom{
                         .and(image.isThumbnail.eq(true)))
                 .orderBy(image.imageId.asc())
                 .limit(1);
+    }
+
+    private BooleanExpression statusEq(OrderStatus status) {
+        return status != null ? order.status.eq(status) : null;
+    }
+
+    private BooleanExpression registeredAtBetween(LocalDateTime from, LocalDateTime to) {
+        if (from != null && to != null) {
+            return order.registeredAt.goe(from).and(order.registeredAt.lt(to));
+        }
+        if (from != null) {
+            return order.registeredAt.goe(from);
+        }
+        if (to != null) {
+            return order.registeredAt.lt(to);
+        }
+        return null;
     }
 }

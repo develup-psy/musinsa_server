@@ -17,7 +17,7 @@ import java.util.List;
 
 @Slf4j
 @Service
-@ConditionalOnProperty(name = "fcm.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "fcm.enabled", havingValue = "true")
 public class FcmService {
 
     @Value("${fcm.service-account-file}")
@@ -29,6 +29,8 @@ public class FcmService {
     @Value("${fcm.project-id}")
     private String projectId;
 
+    private volatile boolean initialized;
+
     @PostConstruct
     public void initialize() {
         if (FirebaseApp.getApps().isEmpty()) {
@@ -39,12 +41,15 @@ public class FcmService {
                         .build();
 
                 FirebaseApp.initializeApp(options);
+                initialized = true;
                 log.info("FirebaseApp has been initialized.");
             } catch (IOException e) {
-                log.error("Failed to initialize FirebaseApp", e);
-                throw new IllegalStateException("Failed to initialize FirebaseApp", e);
+                initialized = false;
+                log.error("Failed to initialize FirebaseApp. FCM will be disabled at runtime.", e);
             }
+            return;
         }
+        initialized = true;
     }
 
 //    public void sendMessageByTopic(String title, String body) throws IOException, FirebaseMessagingException {
@@ -58,6 +63,11 @@ public class FcmService {
 //    }
 
     public boolean sendMessageByToken(String title,String body,List<FBTokenDTO> tokenList){
+        if (!initialized) {
+            log.warn("FCM is not initialized. Skip push notification.");
+            return false;
+        }
+
         List<String> registrationTokens = tokenList.stream()
                 .map(FBTokenDTO::getToken)
                 .toList();

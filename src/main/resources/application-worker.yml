@@ -1,0 +1,42 @@
+spring:
+  main:
+    web-application-type: servlet
+
+server:
+  port: ${WORKER_SERVER_PORT:18080}
+  address: 0.0.0.0
+
+management:
+  server:
+    port: ${WORKER_MANAGEMENT_PORT:18081}
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+logging:
+  level:
+    root: ${WORKER_LOG_LEVEL_ROOT:info}
+    com.mudosa.musinsa.payment.application.service.PaymentQueueWorker: ${WORKER_LOG_LEVEL_QUEUE_WORKER:debug}
+    com.mudosa.musinsa.payment.application.service.PaymentQueueRecoveryWorker: ${WORKER_LOG_LEVEL_RECOVERY_WORKER:debug}
+
+payment:
+  queue:
+    worker:
+      enabled: true

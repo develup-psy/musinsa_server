@@ -26,6 +26,7 @@ public class PaymentConfirmRequest {
     @NotNull(message = "결제 금액은 필수입니다")
     private Long amount;
 
+    @Builder.Default
     private PgProvider pgProvider = PgProvider.TOSS;
 
     public TossPaymentConfirmRequest toTossRequest() {

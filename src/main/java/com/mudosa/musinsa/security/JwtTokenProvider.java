@@ -1,4 +1,3 @@
-// com.mudosa.musinsa.security.JwtTokenProvider
 package com.mudosa.musinsa.security;
 
 import com.mudosa.musinsa.exception.CustomJwtException;
@@ -8,13 +7,17 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtTokenProvider {
@@ -30,27 +33,35 @@ public class JwtTokenProvider {
 
     private SecretKey secretKey;
 
+    private JwtParser jwtParser;
+
     @PostConstruct
     public void init() {
-        byte[] keyBytes = decodeSecret(jwtSecret);      // ★ 수정
-        if (keyBytes.length < 32) {                     // HS256 권장 최소 32바이트
-            throw new IllegalArgumentException("JWT secret too short (<32 bytes). Use 32+ bytes for HS256.");
-        }
-        this.secretKey = Keys.hmacShaKeyFor(keyBytes);
+        byte[] keyBytes = resolveKeyBytes(jwtSecret);
+        secretKey = Keys.hmacShaKeyFor(keyBytes);
+        jwtParser = Jwts.parser().verifyWith(secretKey).build();
     }
 
-    // ★ 추가: Base64 → Base64URL → Plain(UTF-8) 순서로 시도
-    private byte[] decodeSecret(String src) {
-        String s = src == null ? "" : src.trim();
+    private byte[] resolveKeyBytes(String secret) {
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException("JWT secret must not be blank");
+        }
 
-        // 1) 표준 Base64
-        try { return Decoders.BASE64.decode(s); } catch (Exception ignored) {}
+        try {
+            byte[] decoded = Decoders.BASE64.decode(secret);
+            if (decoded.length >= 32) {
+                return decoded;
+            }
+            log.warn("JWT secret is Base64 but too short. Fallback to SHA-256 digest key.");
+        } catch (RuntimeException e) {
+            log.warn("JWT secret is not Base64. Fallback to SHA-256 digest key.");
+        }
 
-        // 2) Base64URL ( '-' , '_' 허용 )
-        try { return Decoders.BASE64URL.decode(s); } catch (Exception ignored) {}
-
-        // 3) Plain UTF-8
-        return s.getBytes(StandardCharsets.UTF_8);
+        try {
+            return MessageDigest.getInstance("SHA-256").digest(secret.getBytes(StandardCharsets.UTF_8));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("Failed to initialize JWT signing key", e);
+        }
     }
 
     /* accessToken 생성 */
@@ -63,7 +74,7 @@ public class JwtTokenProvider {
                 .claim("role", role)
                 .issuedAt(now)
                 .expiration(expiryDate)
-                .signWith(secretKey)              // jjwt 0.12+ : key에서 alg 유추
+                .signWith(secretKey)
                 .compact();
     }
 
@@ -82,14 +93,14 @@ public class JwtTokenProvider {
     }
 
     public long getRemainingExpiration(String token) {
-        Claims claims = Jwts.parser().verifyWith(secretKey).build()
+        Claims claims = jwtParser
                 .parseSignedClaims(token).getPayload();
         return claims.getExpiration().getTime() - System.currentTimeMillis();
     }
 
     public boolean validateToken(String token) {
         try {
-            Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token);
+            jwtParser.parseSignedClaims(token);
             return true;
         } catch (SecurityException | MalformedJwtException e) {
             throw new CustomJwtException(ErrorCode.INVALID_JWT);
@@ -103,19 +114,19 @@ public class JwtTokenProvider {
     }
 
     public String getUserIdFromJWt(String token) {
-        Claims claims = Jwts.parser().verifyWith(secretKey).build()
+        Claims claims = jwtParser
                 .parseSignedClaims(token).getPayload();
         return claims.getSubject();
     }
 
     public Long getUserIdFromToken(String token) {
-        Claims claims = Jwts.parser().verifyWith(secretKey).build()
+        Claims claims = jwtParser
                 .parseSignedClaims(token).getPayload();
         return Long.parseLong(claims.getSubject());
     }
 
     public String getRoleFromToken(String token) {
-        Claims claims = Jwts.parser().verifyWith(secretKey).build()
+        Claims claims = jwtParser
                 .parseSignedClaims(token).getPayload();
         return claims.get("role", String.class);
     }

@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.util.StringUtils;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
@@ -17,7 +18,7 @@ import org.springframework.web.socket.config.annotation.WebSocketTransportRegist
 @RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
-  @Value("${spring.rabbitmq.host}")
+  @Value("${spring.rabbitmq.host:}")
   public String rabbitHost;
 
   @Override
@@ -39,16 +40,20 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
   @Override
   public void configureMessageBroker(MessageBrokerRegistry config) {
-    config.enableStompBrokerRelay("/topic", "/queue")
-        .setRelayHost(rabbitHost)
-        .setRelayPort(61613)
-        .setClientLogin("guest")
-        .setClientPasscode("guest")
-        .setSystemLogin("guest")
-        .setSystemPasscode("guest")
-        .setSystemHeartbeatReceiveInterval(0)
-        .setSystemHeartbeatSendInterval(0)
-    ;
+    if (StringUtils.hasText(rabbitHost)) {
+      config.enableStompBrokerRelay("/topic", "/queue")
+          .setRelayHost(rabbitHost)
+          .setRelayPort(61613)
+          .setClientLogin("guest")
+          .setClientPasscode("guest")
+          .setSystemLogin("guest")
+          .setSystemPasscode("guest")
+          .setSystemHeartbeatReceiveInterval(0)
+          .setSystemHeartbeatSendInterval(0);
+    } else {
+      log.warn("spring.rabbitmq.host is empty. Using simple in-memory STOMP broker.");
+      config.enableSimpleBroker("/topic", "/queue");
+    }
 
     config.setApplicationDestinationPrefixes("/app");
     config.setUserDestinationPrefix("/user");
