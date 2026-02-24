@@ -116,7 +116,8 @@ public enum ErrorCode {
 
   //chat
   MESSAGE_OR_FILE_REQUIRED("110001", "메시지 또는 파일 중 하나는 반드시 포함되어야 합니다.", HttpStatus.BAD_REQUEST),
-  MESSAGE_PARENT_NOT_FOUND("110002", "답장하고자 하는 메시지가 존재하지 않습니다.", HttpStatus.NOT_FOUND),
+  MESSAGE_NOT_FOUND("110002", "메시지를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+  MESSAGE_PARENT_NOT_FOUND("110003", "답장하고자 하는 메시지가 존재하지 않습니다.", HttpStatus.NOT_FOUND),
   FILE_SAVE_FAILED("111001", "파일 저장에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
   FILE_UPLOAD_FAILED("111002", "파일 업로드 중 오류가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
 
