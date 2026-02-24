@@ -19,6 +19,7 @@ import java.util.List;
 @Schema(description = "Message Response Dto")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class WSMessageResponseDTO {
+  @Builder.Default
   private String type = "MESSAGE";
 
   @Schema(description = "메시지 id", example = "1")

@@ -15,6 +15,7 @@ import java.util.List;
 @Schema(description = "FileUploadSuccess Response Dto")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class WSFileUploadSuccessDTO {
+  @Builder.Default
   private String type = "A";
   private Long messageId;
   private Long chatId;
