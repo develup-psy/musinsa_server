@@ -140,19 +140,14 @@ public class OrderService {
         Order order = orderRepository.findByOrderNo(orderNo)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
 
-        List<OrderItem> cacheData = orderRepository.findOrderItems(orderNo);
-
-        List<Long> optionIds = cacheData.stream()
-                .map(OrderItem::getProductOptionId)
-                .toList();
-
         Map<Long, Integer> quantityMap = order.getOrderProducts().stream()
                 .collect(Collectors.toMap(
                         OrderProduct::getProductOptionId,
                         OrderProduct::getProductQuantity
                 ));
 
-        inventoryService.decreaseStock(optionIds, quantityMap);
+        List<Long> optionIds = quantityMap.keySet().stream().toList();
+        inventoryService.decreaseStock(orderNo, optionIds, quantityMap);
 
         order.complete();
         orderRepository.save(order);
@@ -204,13 +199,13 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
 
-        for (OrderProduct orderProduct : order.getOrderProducts()) {
-            ProductOption productOption = productOptionRepository.findById(
-                    orderProduct.getProductOption().getProductOptionId()
-            ).orElseThrow();
+        Map<Long, Integer> quantityMap = order.getOrderProducts().stream()
+                .collect(Collectors.toMap(
+                        OrderProduct::getProductOptionId,
+                        OrderProduct::getProductQuantity
+                ));
 
-            productOption.restoreStock(orderProduct.getProductQuantity());
-        }
+        inventoryService.restoreStock(order.getOrderNo(), quantityMap.keySet().stream().toList(), quantityMap);
 
         order.cancel();
     }
@@ -220,13 +215,13 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
 
-        for (OrderProduct orderProduct : order.getOrderProducts()) {
-            ProductOption productOption = productOptionRepository.findById(
-                    orderProduct.getProductOption().getProductOptionId()
-            ).orElseThrow();
+        Map<Long, Integer> quantityMap = order.getOrderProducts().stream()
+                .collect(Collectors.toMap(
+                        OrderProduct::getProductOptionId,
+                        OrderProduct::getProductQuantity
+                ));
 
-            productOption.decreaseStock(orderProduct.getProductQuantity());
-        }
+        inventoryService.decreaseStock(order.getOrderNo(), quantityMap.keySet().stream().toList(), quantityMap);
 
         order.rollbackToCompleted();
     }
@@ -249,13 +244,13 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
 
-        for (OrderProduct orderProduct : order.getOrderProducts()) {
-            ProductOption productOption = productOptionRepository.findById(
-                    orderProduct.getProductOption().getProductOptionId()
-            ).orElseThrow();
+        Map<Long, Integer> quantityMap = order.getOrderProducts().stream()
+                .collect(Collectors.toMap(
+                        OrderProduct::getProductOptionId,
+                        OrderProduct::getProductQuantity
+                ));
 
-            productOption.restoreStock(orderProduct.getProductQuantity());
-        }
+        inventoryService.restoreStock(order.getOrderNo(), quantityMap.keySet().stream().toList(), quantityMap);
 
         order.rollbackStatus();
         orderRepository.save(order);
