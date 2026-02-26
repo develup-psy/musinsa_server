@@ -66,6 +66,14 @@ payment:
     worker:
       enabled: true
 
+app:
+  file-store:
+    provider: ${FILE_STORE_PROVIDER:local}
+    mode: ${FILE_STORE_MODE:async}
+
+fcm:
+  enabled: ${FCM_ENABLED:false}
+
 pg:
   rate-limit:
     max-requests: 100        # TossPayments Rate Limit (TPS)

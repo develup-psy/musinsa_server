@@ -5,11 +5,11 @@ import com.mudosa.musinsa.domain.chat.repository.ChatPartRepository;
 import com.mudosa.musinsa.domain.chat.repository.ChatRoomRepository;
 import com.mudosa.musinsa.domain.chat.repository.MessageAttachmentRepository;
 import com.mudosa.musinsa.domain.chat.repository.MessageRepository;
-import com.mudosa.musinsa.notification.domain.model.Notification;
-import com.mudosa.musinsa.notification.domain.model.NotificationMetadata;
-import com.mudosa.musinsa.notification.domain.repository.NotificationMetadataRepository;
-import com.mudosa.musinsa.notification.domain.repository.NotificationRepository;
-import com.mudosa.musinsa.notification.domain.service.FcmService;
+import com.mudosa.musinsa.notification.model.Notification;
+import com.mudosa.musinsa.notification.model.NotificationMetadata;
+import com.mudosa.musinsa.notification.repository.NotificationMetadataRepository;
+import com.mudosa.musinsa.notification.repository.NotificationRepository;
+import com.mudosa.musinsa.notification.service.FcmService;
 import com.mudosa.musinsa.security.JwtTokenProvider;
 import com.mudosa.musinsa.settlement.batch.job.DailySettlementAggregationJob;
 import com.mudosa.musinsa.settlement.batch.job.MonthlySettlementAggregationJob;
@@ -28,7 +28,6 @@ import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.transaction.annotation.Transactional;
 
 // 공통 테스트 설정 분리
 @Slf4j

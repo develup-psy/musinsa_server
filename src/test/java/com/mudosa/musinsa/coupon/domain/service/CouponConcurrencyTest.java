@@ -1,11 +1,10 @@
 package com.mudosa.musinsa.coupon.domain.service;
 
-import com.mudosa.musinsa.coupon.domain.model.Coupon;
-import com.mudosa.musinsa.coupon.domain.model.DiscountType;
-import com.mudosa.musinsa.coupon.domain.model.MemberCoupon;
-import com.mudosa.musinsa.coupon.domain.repository.CouponRepository;
-import com.mudosa.musinsa.coupon.domain.repository.MemberCouponRepository;
-import com.mudosa.musinsa.notification.domain.service.FcmService;
+import com.mudosa.musinsa.coupon.model.Coupon;
+import com.mudosa.musinsa.coupon.model.DiscountType;
+import com.mudosa.musinsa.coupon.repository.CouponRepository;
+import com.mudosa.musinsa.coupon.repository.MemberCouponRepository;
+import com.mudosa.musinsa.coupon.service.CouponIssuanceService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -117,7 +116,7 @@ class CouponConcurrencyTest {
 
             executorService.submit(() -> {
                 try {
-                    couponIssuanceService.issueCoupon(userId, testCoupon.getId(), null);
+                    couponIssuanceService.issueCoupon(userId, testCoupon.getId());
                     successCount.incrementAndGet();
                     log.debug("Thread {} (User {}) - 발급 성공", threadNumber, userId);
 
@@ -236,7 +235,7 @@ class CouponConcurrencyTest {
             final int threadNumber = i + 1;
             executorService.submit(() -> {
                 try {
-                    var result = couponIssuanceService.issueCoupon(sameUserId, testCoupon.getId(), null);
+                    var result = couponIssuanceService.issueCoupon(sameUserId, testCoupon.getId());
                     if (result.duplicate()) {
                         duplicateCount.incrementAndGet();
                         log.debug("Thread {} - 기존 발급 재사용", threadNumber);

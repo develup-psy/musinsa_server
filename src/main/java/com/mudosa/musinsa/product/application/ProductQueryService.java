@@ -9,11 +9,15 @@ import com.mudosa.musinsa.product.application.dto.ProductSearchResponse;
 import com.mudosa.musinsa.product.application.mapper.ProductQueryMapper;
 import com.mudosa.musinsa.product.infrastructure.cache.CategoryCache;
 import com.mudosa.musinsa.product.domain.model.Category;
+import com.mudosa.musinsa.product.domain.model.Image;
 import com.mudosa.musinsa.product.domain.model.Product;
 import com.mudosa.musinsa.product.domain.model.ProductGenderType;
+import com.mudosa.musinsa.product.domain.model.ProductOptionValue;
 import com.mudosa.musinsa.product.domain.repository.CategoryRepository;
 import com.mudosa.musinsa.product.domain.repository.ProductRepository;
 import com.mudosa.musinsa.product.domain.repository.ProductRepositoryCustom;
+import com.mudosa.musinsa.product.application.observation.ProductDetailObservationSupport;
+import io.micrometer.observation.annotation.Observed;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,6 +27,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
 
 /**
  * 상품 조회 전용 서비스. 목록, 상세, 검색 응답을 구성한다.
@@ -36,6 +41,7 @@ public class ProductQueryService {
 	private final ProductRepository productRepository;
 	private final CategoryRepository categoryRepository;
 	private final CategoryCache categoryCache;
+	private final ProductDetailObservationSupport productDetailObservationSupport;
 
 	/**
 	 * 검색 조건에 맞는 상품을 조회해 페이지 형태로 반환한다.
@@ -61,13 +67,34 @@ public class ProductQueryService {
 	/**
 	 * 단일 상품 상세 정보를 조회한다.
 	 */
+	@Observed(name = "product.detail", contextualName = "product.detail")
 	public ProductDetailResponse getProductDetail(Long productId) {
-		// 1. 상품 엔티티 조회 (상품 + 옵션)
-		Product product = productRepository.findDetailById(productId)
-			.orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND,"해당 상품을 찾을 수 없거나 비활성화된 상품입니다"));
+		// 1. 상품 존재/상태 확인 및 옵션(+재고)까지 단일 쿼리로 조회
+		Product product = productDetailObservationSupport.fetchProductWithOptions(productId);
 
-		// 2. 응답 DTO 변환
-		return ProductQueryMapper.toProductDetail(product);
+		// 2. 이미지 컬렉션은 별도 쿼리로 로딩
+		List<Image> productImages = productDetailObservationSupport.fetchImages(productId);
+		List<ProductDetailResponse.ImageResponse> images = productImages.stream()
+			.map(ProductQueryMapper::toImageResponse)
+			.collect(Collectors.toList());
+
+		// 3. 옵션값 매핑을 별도 조회 후 옵션별로 그룹핑 (엔티티 변형 없음)
+		List<ProductOptionValue> optionValues = productDetailObservationSupport.fetchProductOptionValues(productId);
+		Map<Long, List<ProductOptionValue>> optionValuesByOptionId = productDetailObservationSupport.groupOptionValuesByOptionId(optionValues);
+
+		// 4. 캐시에서 옵션값 메타데이터(이름/값)를 조회해 DTO 매핑에 사용
+		Map<Long, ProductQueryMapper.OptionValueInfo> optionValueInfoMap =
+			productDetailObservationSupport.buildOptionValueInfoMap(optionValues);
+
+		// 5. 최종 응답 DTO 구성
+		List<ProductDetailResponse.OptionDetail> options = product.getProductOptions().stream()
+			.map(option -> ProductQueryMapper.toOptionDetail(
+				option,
+				optionValuesByOptionId.getOrDefault(option.getProductOptionId(), List.of()),
+				optionValueInfoMap))
+			.collect(Collectors.toList());
+
+		return ProductQueryMapper.toProductDetail(product, images, options);
 	}
 
 	/**
@@ -121,8 +148,6 @@ public class ProductQueryService {
 			.children(childNodes)
 			.build();
 	}
-
-    
 
 	// 검색 조건을 안전하게 파싱해 내부용 검색 파라미터 객체로 변환한다.
 	private SearchParams parseCondition(ProductSearchCondition condition) {
@@ -209,5 +234,4 @@ public class ProductQueryService {
 			this.limit = limit;
 		}
 	}
-
 }

@@ -1,8 +1,8 @@
 package com.mudosa.musinsa.event.service;
 
-import com.mudosa.musinsa.coupon.domain.model.Coupon;
-import com.mudosa.musinsa.coupon.domain.model.DiscountType;
-import com.mudosa.musinsa.coupon.domain.service.CouponIssuanceService;
+import com.mudosa.musinsa.coupon.model.Coupon;
+import com.mudosa.musinsa.coupon.model.DiscountType;
+import com.mudosa.musinsa.coupon.service.CouponIssuanceService;
 import com.mudosa.musinsa.event.model.Event;
 
 import com.mudosa.musinsa.event.model.EventOption;
@@ -11,6 +11,8 @@ import com.mudosa.musinsa.event.repository.EventOptionRepository;
 import com.mudosa.musinsa.exception.BusinessException;
 import com.mudosa.musinsa.exception.ErrorCode;
 import com.mudosa.musinsa.product.domain.model.ProductOption;
+
+import com.mudosa.musinsa.coupon.presentation.dto.res.CouponIssuanceResDto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -30,7 +32,6 @@ public class EventCouponService {
     private final EventOptionRepository eventOptionRepository;
     private final CouponIssuanceService couponIssuanceService;
 
-
     /*
 
     * 이벤트 상태 및 사용자 제한 검증
@@ -41,8 +42,7 @@ public class EventCouponService {
 
     // 이벤트 쿠폰 발급 => 쿠폰 발급 버튼을 눌렀을 때 실행
     @Transactional
-    public EventCouponIssueResult issueCoupon(Long eventId,
-                                              Long userId ){
+    public EventCouponIssueResult issueCoupon(Long eventId, Long userId){
 
 
             // 1. 이벤트 옵션 조회 락 불필요(읽기 전용) , 이벤트와 1:1 매핑
@@ -67,10 +67,11 @@ public class EventCouponService {
             // 상품 ID 확인
             Long productId = resolveProductId(eventOption);
 
-            //  5. 멱등성 체크 : 이미 발급된 쿠폰이 있는지 먼저 조회 , 있으면 그대로 재사용
+            //  5.멱등성 체크 : 이미 발급된 쿠폰이 있는지 먼저 조회 , 있으면 그대로 재사용
 
-            Optional<CouponIssuanceService.CouponIssuanceResult> existing = couponIssuanceService
-                    .findIssuedCoupon(userId, couponId);
+            Optional<CouponIssuanceResDto> existing =
+                    couponIssuanceService.findIssuedCoupon(userId, couponId);
+
             if (existing.isPresent()) {
                 log.info("멱등 처리 - eventId: {}, userId: {}", eventId, userId);
                 return EventCouponIssueResult.from(existing.get());
@@ -83,8 +84,9 @@ public class EventCouponService {
              *✅ CouponIssuanceService 내부에서 Coupon에 PESSIMISTIC_WRITE 락을 걸어
              *issuedQuantity 증가를 원자적으로 처리
             */
-            CouponIssuanceService.CouponIssuanceResult issuanceResult = couponIssuanceService
-                    .issueCoupon(userId, couponId, productId);
+
+            CouponIssuanceResDto issuanceResult =
+                    couponIssuanceService.issueCoupon(userId, couponId);
 
 
             // 10. 중복 발급 감지 ( 재진입 케이스 )
@@ -141,12 +143,18 @@ public class EventCouponService {
         return productOption.getProduct().getProductId();
     }
 
-    public record EventCouponIssueResult(Long memberCouponId,
+
+
+    // ResDTO
+
+    public record EventCouponIssueResult(
+                                        Long memberCouponId,
                                         Long couponId,
                                         LocalDateTime issuedAt,
                                         LocalDateTime expiredAt,
-                                        boolean duplicate ) {
-        private static EventCouponIssueResult from(CouponIssuanceService.CouponIssuanceResult result){
+                                        boolean duplicate
+    ) {
+        private static EventCouponIssueResult from(CouponIssuanceResDto result){
             return new EventCouponIssueResult(
                     result.memberCouponId(),
                     result.couponId(),

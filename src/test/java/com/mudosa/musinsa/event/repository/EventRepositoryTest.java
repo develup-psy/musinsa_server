@@ -1,9 +1,9 @@
 package com.mudosa.musinsa.event.repository;
 
 import com.mudosa.musinsa.ServiceConfig;
-import com.mudosa.musinsa.coupon.domain.model.Coupon;
-import com.mudosa.musinsa.coupon.domain.model.DiscountType;
-import com.mudosa.musinsa.coupon.domain.repository.CouponRepository;
+import com.mudosa.musinsa.coupon.model.Coupon;
+import com.mudosa.musinsa.coupon.model.DiscountType;
+import com.mudosa.musinsa.coupon.repository.CouponRepository;
 import com.mudosa.musinsa.event.model.Event;
 import com.mudosa.musinsa.event.model.EventStatus;
 import org.junit.jupiter.api.DisplayName;

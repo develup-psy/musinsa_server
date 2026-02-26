@@ -1,11 +1,12 @@
 package com.mudosa.musinsa.coupon.domain.service;
 
 import com.mudosa.musinsa.ServiceConfig;
-import com.mudosa.musinsa.coupon.domain.model.Coupon;
-import com.mudosa.musinsa.coupon.domain.model.DiscountType;
-import com.mudosa.musinsa.coupon.domain.model.MemberCoupon;
-import com.mudosa.musinsa.coupon.domain.repository.CouponRepository;
-import com.mudosa.musinsa.coupon.domain.repository.MemberCouponRepository;
+import com.mudosa.musinsa.coupon.model.Coupon;
+import com.mudosa.musinsa.coupon.model.DiscountType;
+import com.mudosa.musinsa.coupon.presentation.dto.res.CouponIssuanceResDto;
+import com.mudosa.musinsa.coupon.repository.CouponRepository;
+import com.mudosa.musinsa.coupon.repository.MemberCouponRepository;
+import com.mudosa.musinsa.coupon.service.CouponIssuanceService;
 import com.mudosa.musinsa.exception.BusinessException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -35,7 +36,7 @@ class CouponIssuanceServiceTest extends ServiceConfig {
 
     @Test
     @DisplayName("[해피케이스] 쿠폰 발급 - 정상적으로 쿠폰을 발급한다")
-    void issueCoupon_Success() {
+    void issueCoupon_WithLock_Success() {
         // given
         Long userId = 1L;
         Long productId = 100L;
@@ -52,7 +53,7 @@ class CouponIssuanceServiceTest extends ServiceConfig {
         Coupon savedCoupon = couponRepository.save(coupon);
 
         // when
-        CouponIssuanceService.CouponIssuanceResult result = couponIssuanceService.issueCoupon(userId, savedCoupon.getId(), productId);
+        CouponIssuanceResDto result = couponIssuanceService.issueCoupon(userId, savedCoupon.getId());
 
         // then
         assertThat(result).isNotNull();
@@ -63,7 +64,7 @@ class CouponIssuanceServiceTest extends ServiceConfig {
 
     @Test
     @DisplayName("[해피케이스] 쿠폰 중복 발급 - 이미 발급된 쿠폰이면 중복 발급으로 처리한다")
-    void issueCoupon_Duplicate_Success() {
+    void issueCoupon_WithLock_Duplicate_Success() {
         // given
         Long userId = 2L;
         Long productId = 100L;
@@ -80,11 +81,11 @@ class CouponIssuanceServiceTest extends ServiceConfig {
         Coupon savedCoupon = couponRepository.save(coupon);
 
         // 첫 번째 발급
-        couponIssuanceService.issueCoupon(userId, savedCoupon.getId(), productId);
+        couponIssuanceService.issueCoupon(userId, savedCoupon.getId());
 
         // when
         // 두 번째 발급 시도
-        CouponIssuanceService.CouponIssuanceResult result = couponIssuanceService.issueCoupon(userId, savedCoupon.getId(), productId);
+        CouponIssuanceResDto result = couponIssuanceService.issueCoupon(userId, savedCoupon.getId());
 
         // then
         assertThat(result).isNotNull();
@@ -93,20 +94,20 @@ class CouponIssuanceServiceTest extends ServiceConfig {
 
     @Test
     @DisplayName("[예외케이스] 쿠폰 발급 - 존재하지 않는 쿠폰이면 예외가 발생한다")
-    void issueCoupon_CouponNotFound_ThrowsException() {
+    void issueCoupon_CouponWithLockNotFound_ThrowsException() {
         // given
         Long userId = 3L;
         Long productId = 100L;
         Long nonExistentCouponId = 999999L;
 
         // when & then
-        assertThatThrownBy(() -> couponIssuanceService.issueCoupon(userId, nonExistentCouponId, productId))
+        assertThatThrownBy(() -> couponIssuanceService.issueCoupon(userId, nonExistentCouponId))
                 .isInstanceOf(BusinessException.class);
     }
 
     @Test
     @DisplayName("[예외케이스] 쿠폰 발급 - 발급 기간이 아니면 예외가 발생한다")
-    void issueCoupon_OutOfPeriod_ThrowsException() {
+    void issueCoupon_WithLock_OutOfPeriod_ThrowsException() {
         // given
         Long userId = 4L;
         Long productId = 100L;
@@ -123,7 +124,7 @@ class CouponIssuanceServiceTest extends ServiceConfig {
         Coupon savedCoupon = couponRepository.save(coupon);
 
         // when & then
-        assertThatThrownBy(() -> couponIssuanceService.issueCoupon(userId, savedCoupon.getId(), productId))
+        assertThatThrownBy(() -> couponIssuanceService.issueCoupon(userId, savedCoupon.getId()))
                 .isInstanceOf(BusinessException.class);
     }
 
@@ -144,10 +145,10 @@ class CouponIssuanceServiceTest extends ServiceConfig {
                 .totalQuantity(100)
                 .build();
         Coupon savedCoupon = couponRepository.save(coupon);
-        couponIssuanceService.issueCoupon(userId, savedCoupon.getId(), productId);
+        couponIssuanceService.issueCoupon(userId, savedCoupon.getId());
 
         // when
-        Optional<CouponIssuanceService.CouponIssuanceResult> result = couponIssuanceService.findIssuedCoupon(userId, savedCoupon.getId());
+        Optional<CouponIssuanceResDto> result = couponIssuanceService.findIssuedCoupon(userId, savedCoupon.getId());
 
         // then
         assertThat(result).isPresent();
@@ -171,7 +172,7 @@ class CouponIssuanceServiceTest extends ServiceConfig {
                 .totalQuantity(100)
                 .build();
         Coupon savedCoupon = couponRepository.save(coupon);
-        couponIssuanceService.issueCoupon(userId, savedCoupon.getId(), productId);
+        couponIssuanceService.issueCoupon(userId, savedCoupon.getId());
 
         // when
         long count = couponIssuanceService.countIssuedByUser(userId, savedCoupon.getId());
@@ -188,7 +189,7 @@ class CouponIssuanceServiceTest extends ServiceConfig {
         Long nonExistentCouponId = 999999L;
 
         // when
-        Optional<CouponIssuanceService.CouponIssuanceResult> result = couponIssuanceService.findIssuedCoupon(nonExistentUserId, nonExistentCouponId);
+        Optional<CouponIssuanceResDto> result = couponIssuanceService.findIssuedCoupon(nonExistentUserId, nonExistentCouponId);
 
         // then
         assertThat(result).isEmpty();

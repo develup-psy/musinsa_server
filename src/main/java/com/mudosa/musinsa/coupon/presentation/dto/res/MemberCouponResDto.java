@@ -1,9 +1,9 @@
 package com.mudosa.musinsa.coupon.presentation.dto.res;
 
-import com.mudosa.musinsa.coupon.domain.model.Coupon;
-import com.mudosa.musinsa.coupon.domain.model.CouponStatus;
-import com.mudosa.musinsa.coupon.domain.model.DiscountType;
-import com.mudosa.musinsa.coupon.domain.model.MemberCoupon;
+import com.mudosa.musinsa.coupon.model.Coupon;
+import com.mudosa.musinsa.coupon.model.CouponStatus;
+import com.mudosa.musinsa.coupon.model.DiscountType;
+import com.mudosa.musinsa.coupon.model.MemberCoupon;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

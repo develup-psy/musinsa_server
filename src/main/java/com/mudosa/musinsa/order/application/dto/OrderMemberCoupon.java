@@ -1,6 +1,6 @@
 package com.mudosa.musinsa.order.application.dto;
 
-import com.mudosa.musinsa.coupon.domain.model.DiscountType;
+import com.mudosa.musinsa.coupon.model.DiscountType;
 import com.querydsl.core.annotations.QueryProjection;
 import lombok.Getter;
 

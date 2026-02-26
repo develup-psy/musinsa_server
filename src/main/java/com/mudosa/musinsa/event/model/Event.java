@@ -1,7 +1,7 @@
 package com.mudosa.musinsa.event.model;
 
 import com.mudosa.musinsa.common.domain.model.BaseEntity;
-import com.mudosa.musinsa.coupon.domain.model.Coupon;
+import com.mudosa.musinsa.coupon.model.Coupon;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -17,10 +17,11 @@ import java.util.List;
 
 @Entity
 @Table(
-        name = "event",
+      name = "event",
         indexes = {
-                @Index(name = "idx_event_status", columnList = "status"),
-                @Index(name = "idx_event_period", columnList = "started_at, ended_at")
+                @Index(name = "idx_event_status_started", columnList = "status, started_at"),
+                @Index(name = "idx_event_status_ended", columnList = "status, ended_at"),
+                @Index(name = "idx_event_coupon", columnList = "coupon_id")
         }
 )
 @Check(constraints = "ended_at > started_at")

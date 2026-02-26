@@ -1,7 +1,7 @@
 package com.mudosa.musinsa.event.presentation.dto.res;
 
-import com.mudosa.musinsa.coupon.domain.model.Coupon;
-import com.mudosa.musinsa.coupon.domain.model.DiscountType;
+import com.mudosa.musinsa.coupon.model.Coupon;
+import com.mudosa.musinsa.coupon.model.DiscountType;
 import lombok.Builder;
 import lombok.Getter;
 

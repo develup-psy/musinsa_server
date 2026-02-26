@@ -15,49 +15,40 @@ import java.util.Optional;
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long>, ProductRepositoryCustom {
 
-  @Query("""
-    select distinct p
-    from Product p
-    left join fetch p.brand
-    left join fetch p.images
-    where p.productId = :productId
-    and p.isAvailable = true
-    """)
-  Optional<Product> findDetailById(Long productId);
-
   // 브랜드 매니저용: 특정 브랜드의 모든 상품 조회 (isAvailable 상관없이)
   @Query("""
-    select distinct p
-    from Product p
-    left join fetch p.brand
-    left join fetch p.images
-    where p.brand.brandId = :brandId
-    order by p.productId asc
-    """)
+  select distinct p
+  from Product p
+  left join fetch p.brand
+  left join fetch p.images
+  where p.brand.brandId = :brandId
+  order by p.productId asc
+  """)
   List<Product> findAllByBrandForManager(Long brandId);
 
   // 브랜드 매니저용: 특정 브랜드의 상품 상세 조회 (isAvailable 상관없이)
   @Query("""
-    select distinct p
-    from Product p
-    left join fetch p.brand
-    left join fetch p.images
-    where p.productId = :productId
-    and p.brand.brandId = :brandId
-    """)
+  select distinct p
+  from Product p
+  left join fetch p.brand
+  left join fetch p.images
+  where p.productId = :productId
+  and p.brand.brandId = :brandId
+  """)
   Optional<Product> findDetailByIdForManager(Long productId, Long brandId);
 
   // 옵션 추가 등 동시성 제어가 필요한 경우 비관적 락으로 조회한다.
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query("""
-    select distinct p
-    from Product p
-    left join fetch p.brand
-    left join fetch p.images
-    where p.productId = :productId
-    and p.brand.brandId = :brandId
-    """)
-  Optional<Product> findDetailByIdForManagerWithLock(Long productId, Long brandId);
+  select distinct p
+  from Product p
+  left join fetch p.brand
+  left join fetch p.images
+  where p.productId = :productId
+  and p.brand.brandId = :brandId
+  """)
+  Optional<Product> findDetailByIdForManagerWithLock(Long productId, Long
+  brandId);
 
   List<Product> findTop6ByBrandOrderByCreatedAtDesc(Brand brand);
 }

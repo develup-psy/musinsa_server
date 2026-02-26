@@ -1,8 +1,16 @@
 package com.mudosa.musinsa.product.domain.repository;
 
+import com.mudosa.musinsa.product.application.dto.ProductDetailResponse;
 import com.mudosa.musinsa.product.application.dto.ProductSearchCondition;
 import com.mudosa.musinsa.product.application.dto.ProductSearchResponse;
+import com.mudosa.musinsa.product.domain.model.Image;
+import com.mudosa.musinsa.product.domain.model.Product;
 import com.mudosa.musinsa.product.domain.model.ProductGenderType;
+import com.mudosa.musinsa.product.domain.model.ProductOptionValue;
+import com.mudosa.musinsa.product.domain.model.QImage;
+import com.mudosa.musinsa.product.domain.model.QInventory;
+import com.mudosa.musinsa.product.domain.model.QProductOption;
+import com.mudosa.musinsa.product.domain.model.QProductOptionValue;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
@@ -11,6 +19,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,42 +36,84 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
     // 필터링 조건을 QueryDSL로 조합해 상품 요약 목록을 커서 기반으로 조회한다. (키워드 제외)
     @Override
     public List<ProductSearchResponse.ProductSummary> findAllByFiltersWithCursor(List<String> categoryPaths,
-                                                                                 ProductGenderType gender,
-                                                                                 Long brandId,
-                                                                                 ProductSearchCondition.PriceSort priceSort,
-                                                                                 Cursor cursor,
-                                                                                 int limit) {
+            ProductGenderType gender,
+            Long brandId,
+            ProductSearchCondition.PriceSort priceSort,
+            Cursor cursor,
+            int limit) {
         return baseQuery(categoryPaths, gender, brandId, priceSort, cursor, limit);
     }
 
     // 키워드 검색 + 필터 조합 (QueryDSL)
     @Override
     public List<ProductSearchResponse.ProductSummary> searchByKeywordWithFilters(String keyword,
-                                                                                 List<String> categoryPaths,
-                                                                                 ProductGenderType gender,
-                                                                                 Long brandId,
-                                                                                 ProductSearchCondition.PriceSort priceSort,
-                                                                                 Cursor cursor,
-                                                                                 int limit) {
+            List<String> categoryPaths,
+            ProductGenderType gender,
+            Long brandId,
+            ProductSearchCondition.PriceSort priceSort,
+            Cursor cursor,
+            int limit) {
         return baseQuery(categoryPaths, gender, brandId, priceSort, cursor, limit, keyword);
     }
 
+    // 상품 상세 조회 (상품, 상품 옵션, 재고)
+    @Override
+    public Optional<Product> findDetailById(Long productId) {
+        QProductOption productOption = QProductOption.productOption;
+        QInventory inventory = QInventory.inventory;
+
+        return Optional.ofNullable(queryFactory
+                .selectFrom(product)
+                .distinct()
+                .leftJoin(product.brand).fetchJoin()
+                .leftJoin(product.productOptions, productOption).fetchJoin()
+                .leftJoin(productOption.inventory, inventory).fetchJoin()
+                .where(product.productId.eq(productId), product.isAvailable.isTrue())
+                .fetchOne());
+    }
+
+    // 상품 상세 조회 (이미지)
+    @Override
+    public List<Image> findImagesByProductId(Long productId) {
+        QImage image = QImage.image;
+        return queryFactory
+                .selectFrom(image)
+                .where(image.product.productId.eq(productId))
+                .orderBy(image.isThumbnail.desc(), image.imageId.asc())
+                .fetch();
+    }
+
+    // 상품 상세 조회 (옵션 값)
+    @Override
+    public List<ProductOptionValue> findProductOptionValuesByProductId(Long productId) {
+        QProductOption productOption = QProductOption.productOption;
+        QProductOptionValue productOptionValue = QProductOptionValue.productOptionValue;
+
+        return queryFactory
+                .selectFrom(productOptionValue)
+                .leftJoin(productOptionValue.productOption, productOption).fetchJoin()
+                .where(productOption.product.productId.eq(productId))
+                .fetch();
+    }
+
+    // QueryDSL로 상품 요약 목록을 커서 기반으로 조회한다. (키워드 제외)
     private List<ProductSearchResponse.ProductSummary> baseQuery(List<String> categoryPaths,
-                                                                 ProductGenderType gender,
-                                                                 Long brandId,
-                                                                 ProductSearchCondition.PriceSort priceSort,
-                                                                 Cursor cursor,
-                                                                 int limit) {
+            ProductGenderType gender,
+            Long brandId,
+            ProductSearchCondition.PriceSort priceSort,
+            Cursor cursor,
+            int limit) {
         return baseQuery(categoryPaths, gender, brandId, priceSort, cursor, limit, null);
     }
 
+    // QueryDSL로 상품 요약 목록을 커서 기반으로 조회한다. (키워드 포함)
     private List<ProductSearchResponse.ProductSummary> baseQuery(List<String> categoryPaths,
-                                                                 ProductGenderType gender,
-                                                                 Long brandId,
-                                                                 ProductSearchCondition.PriceSort priceSort,
-                                                                 Cursor cursor,
-                                                                 int limit,
-                                                                 String keyword) {
+            ProductGenderType gender,
+            Long brandId,
+            ProductSearchCondition.PriceSort priceSort,
+            Cursor cursor,
+            int limit,
+            String keyword) {
         List<BooleanExpression> conditions = new ArrayList<>();
         conditions.add(product.isAvailable.isTrue());
         conditions.add(categoryPathsCondition(categoryPaths));
@@ -72,25 +123,24 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         conditions.add(keywordCondition(keyword));
 
         return queryFactory
-            .select(Projections.constructor(
-                ProductSearchResponse.ProductSummary.class,
-                product.productId,
-                product.brand.brandId,
-                product.brandName,
-                product.productName,
-                product.productInfo,
-                product.productGenderType.stringValue(),
-                product.isAvailable,
-                Expressions.nullExpression(Boolean.class), // hasStock 필드는 상품 조회에 필요없음
-                product.defaultPrice,
-                product.thumbnailImage,
-                product.categoryPath
-            ))
-            .from(product)
-            .where(allOf(conditions))
-            .orderBy(orderSpecifiers(priceSort))
-            .limit(limit)
-            .fetch();
+                .select(Projections.constructor(
+                        ProductSearchResponse.ProductSummary.class,
+                        product.productId,
+                        product.brand.brandId,
+                        product.brandName,
+                        product.productName,
+                        product.productInfo,
+                        product.productGenderType.stringValue(),
+                        product.isAvailable,
+                        Expressions.nullExpression(Boolean.class), // hasStock 필드는 상품 조회에 필요없음
+                        product.defaultPrice,
+                        product.thumbnailImage,
+                        product.categoryPath))
+                .from(product)
+                .where(allOf(conditions))
+                .orderBy(orderSpecifiers(priceSort))
+                .limit(limit)
+                .fetch();
     }
 
     // 카테고리 경로 필터 조건 생성
@@ -125,11 +175,11 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         BigDecimal cursorPrice = cursor.price();
         if (priceSort == ProductSearchCondition.PriceSort.HIGHEST && cursorPrice != null) {
             return product.defaultPrice.lt(cursorPrice)
-                .or(product.defaultPrice.eq(cursorPrice).and(product.productId.gt(cursor.productId())));
+                    .or(product.defaultPrice.eq(cursorPrice).and(product.productId.gt(cursor.productId())));
         }
         if (priceSort == ProductSearchCondition.PriceSort.LOWEST && cursorPrice != null) {
             return product.defaultPrice.gt(cursorPrice)
-                .or(product.defaultPrice.eq(cursorPrice).and(product.productId.gt(cursor.productId())));
+                    .or(product.defaultPrice.eq(cursorPrice).and(product.productId.gt(cursor.productId())));
         }
         return product.productId.gt(cursor.productId());
     }
@@ -137,20 +187,20 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
     // 정렬 조건(가격 정렬 우선, 이후 productId) 구성
     private OrderSpecifier<?>[] orderSpecifiers(ProductSearchCondition.PriceSort priceSort) {
         if (priceSort == ProductSearchCondition.PriceSort.HIGHEST) {
-            return new OrderSpecifier<?>[]{product.defaultPrice.desc(), product.productId.asc()};
+            return new OrderSpecifier<?>[] { product.defaultPrice.desc(), product.productId.asc() };
         }
         if (priceSort == ProductSearchCondition.PriceSort.LOWEST) {
-            return new OrderSpecifier<?>[]{product.defaultPrice.asc(), product.productId.asc()};
+            return new OrderSpecifier<?>[] { product.defaultPrice.asc(), product.productId.asc() };
         }
-        return new OrderSpecifier<?>[]{product.productId.asc()};
+        return new OrderSpecifier<?>[] { product.productId.asc() };
     }
 
     // null이 아닌 조건만 AND로 묶는다.
     private BooleanExpression allOf(List<BooleanExpression> expressions) {
         return expressions.stream()
-            .filter(expr -> expr != null)
-            .reduce(BooleanExpression::and)
-            .orElse(null);
+                .filter(expr -> expr != null)
+                .reduce(BooleanExpression::and)
+                .orElse(null);
     }
 
     // 키워드 LIKE 조건 생성 (상품명/정보/브랜드명/카테고리 경로)
@@ -160,9 +210,9 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         }
         String lowered = keyword.toLowerCase();
         return product.productName.lower().contains(lowered)
-            .or(product.productInfo.lower().contains(lowered))
-            .or(product.brandName.lower().contains(lowered))
-            .or(product.categoryPath.lower().contains(lowered));
+                .or(product.productInfo.lower().contains(lowered))
+                .or(product.brandName.lower().contains(lowered))
+                .or(product.categoryPath.lower().contains(lowered));
     }
 
 }
