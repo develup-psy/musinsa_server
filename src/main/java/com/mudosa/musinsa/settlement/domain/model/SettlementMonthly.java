@@ -25,7 +25,7 @@ import java.time.ZoneId;
     },
     indexes = {
         @Index(name = "idx_year_month", columnList = "settlement_year, settlement_month"),
-        @Index(name = "idx_settlement_status", columnList = "settlement_status")
+        @Index(name = "idx_monthly_settlement_status", columnList = "settlement_status")
     }
 )
 @Getter
