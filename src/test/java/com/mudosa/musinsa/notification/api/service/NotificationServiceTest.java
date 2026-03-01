@@ -3,11 +3,11 @@ package com.mudosa.musinsa.notification.api.service;
 import com.mudosa.musinsa.ServiceConfig;
 import com.mudosa.musinsa.brand.domain.model.Brand;
 import com.mudosa.musinsa.brand.domain.model.BrandStatus;
-import com.mudosa.musinsa.domain.chat.dto.MessageResponse;
-import com.mudosa.musinsa.domain.chat.entity.ChatPart;
-import com.mudosa.musinsa.domain.chat.entity.ChatRoom;
-import com.mudosa.musinsa.domain.chat.enums.ChatPartRole;
-import com.mudosa.musinsa.domain.chat.enums.ChatRoomType;
+import com.mudosa.musinsa.chat.dto.MessageResponse;
+import com.mudosa.musinsa.chat.entity.ChatPart;
+import com.mudosa.musinsa.chat.entity.ChatRoom;
+import com.mudosa.musinsa.chat.enums.ChatPartRole;
+import com.mudosa.musinsa.chat.enums.ChatRoomType;
 import com.mudosa.musinsa.notification.dto.NotificationDTO;
 import com.mudosa.musinsa.notification.event.ChatNotificationCreatedEvent;
 import com.mudosa.musinsa.notification.model.Notification;
@@ -209,7 +209,7 @@ class NotificationServiceTest extends ServiceConfig {
         // when
             List<Notification> notifications = notificationService.createChatNotification(chatNotificationCreatedEvent);
         // then
-            assertThat(notifications).isNull();
+            assertThat(notifications).isEmpty();
 
         }
     }

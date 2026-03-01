@@ -36,12 +36,12 @@ class CouponQueryServiceTest extends ServiceConfig {
     @DisplayName("[해피케이스] 회원 쿠폰 목록 조회 - 사용자가 발급받은 모든 쿠폰 목록을 조회한다")
     void getMemberCoupons_Success() {
         // given
-        Long userId = 1L;
+        Long userId = uniqueUserId();
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
 
         Coupon coupon1 = Coupon.builder()
-                .couponName("테스트 쿠폰1")
+                .couponName(uniqueCouponName("테스트 쿠폰1"))
                 .discountType(DiscountType.AMOUNT)
                 .discountValue(new BigDecimal("5000"))
                 .startDate(startDate)
@@ -49,7 +49,7 @@ class CouponQueryServiceTest extends ServiceConfig {
                 .totalQuantity(100)
                 .build();
         Coupon coupon2 = Coupon.builder()
-                .couponName("테스트 쿠폰2")
+                .couponName(uniqueCouponName("테스트 쿠폰2"))
                 .discountType(DiscountType.PERCENTAGE)
                 .discountValue(new BigDecimal("10"))
                 .startDate(startDate)
@@ -70,7 +70,7 @@ class CouponQueryServiceTest extends ServiceConfig {
         // then
         assertThat(result).hasSize(2);
         assertThat(result).extracting(MemberCouponResDto::getCouponName)
-                .contains("테스트 쿠폰1", "테스트 쿠폰2");
+                .contains(savedCoupon1.getCouponName(), savedCoupon2.getCouponName());
 
     }
 
@@ -78,12 +78,12 @@ class CouponQueryServiceTest extends ServiceConfig {
     @DisplayName("[해피케이스] 사용 가능한 쿠폰 목록 조회 - 사용자가 발급받은 사용 가능한 쿠폰만 조회한다")
     void getAvailableMemberCoupons_Success() {
         // given
-        Long userId = 2L;
+        Long userId = uniqueUserId();
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
 
         Coupon coupon = Coupon.builder()
-                .couponName("사용 가능 쿠폰")
+                .couponName(uniqueCouponName("사용 가능 쿠폰"))
                 .discountType(DiscountType.AMOUNT)
                 .discountValue(new BigDecimal("5000"))
                 .startDate(startDate)
@@ -99,16 +99,15 @@ class CouponQueryServiceTest extends ServiceConfig {
         List<MemberCouponResDto> result = couponListService.getAvailableMemberCoupons(userId);
 
         // then
-        // MemberCoupon.issue()에서 expiredAt이 현재 시간으로 설정되므로
-        // isUsuable()이 false를 반환하여 빈 리스트가 됨
-        assertThat(result).isEmpty();
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().getCouponName()).isEqualTo(savedCoupon.getCouponName());
     }
 
     @Test
     @DisplayName("[예외케이스] 회원 쿠폰 목록 조회 - 발급받은 쿠폰이 없으면 빈 리스트를 반환한다")
     void getMemberCoupons_NoIssuance_ReturnsEmptyList() {
         // given
-        Long nonExistentUserId = 999999L;
+        Long nonExistentUserId = uniqueUserId();
 
         // when
         List<MemberCouponResDto> result = couponListService.getMemberCoupons(nonExistentUserId);
@@ -121,12 +120,20 @@ class CouponQueryServiceTest extends ServiceConfig {
     @DisplayName("[예외케이스] 사용 가능한 쿠폰 목록 조회 - 사용 가능한 쿠폰이 없으면 빈 리스트를 반환한다")
     void getAvailableMemberCoupons_NoAvailableCoupons_ReturnsEmptyList() {
         // given
-        Long nonExistentUserId = 999999L;
+        Long nonExistentUserId = uniqueUserId();
 
         // when
         List<MemberCouponResDto> result = couponListService.getAvailableMemberCoupons(nonExistentUserId);
 
         // then
         assertThat(result).isEmpty();
+    }
+
+    private Long uniqueUserId() {
+        return System.nanoTime();
+    }
+
+    private String uniqueCouponName(String prefix) {
+        return prefix + "_" + System.nanoTime();
     }
 }

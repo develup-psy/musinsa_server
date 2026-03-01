@@ -88,10 +88,10 @@ class EventCouponServiceIntegrationTest extends ServiceConfig {
                 eventCouponService.issueCoupon(testData.eventId, userId);
         assertThat(secondResult.duplicate()).isTrue();
 
-        // when & then
-        // 세 번째 발급 시도 - 제한 초과로 예외 발생
-        assertThatThrownBy(() -> eventCouponService.issueCoupon(testData.eventId, userId))
-                .isInstanceOf(BusinessException.class);
+        // 세 번째 발급도 멱등 처리로 duplicate=true를 반환한다.
+        EventCouponService.EventCouponIssueResult thirdResult =
+                eventCouponService.issueCoupon(testData.eventId, userId);
+        assertThat(thirdResult.duplicate()).isTrue();
     }
 
     @Test
@@ -258,7 +258,7 @@ class EventCouponServiceIntegrationTest extends ServiceConfig {
         productOptionRepository.save(productOption);
 
         Coupon coupon = Coupon.builder()
-                .couponName("통합테스트 쿠폰")
+                .couponName(uniqueCouponName("통합테스트 쿠폰"))
                 .discountType(DiscountType.AMOUNT)
                 .discountValue(new BigDecimal("10000"))
                 .startDate(startDate)
@@ -396,7 +396,7 @@ class EventCouponServiceIntegrationTest extends ServiceConfig {
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
 
         Coupon coupon = Coupon.builder()
-                .couponName("DRAFT 테스트 쿠폰")
+                .couponName(uniqueCouponName("DRAFT 테스트 쿠폰"))
                 .discountType(DiscountType.AMOUNT)
                 .discountValue(new BigDecimal("10000"))
                 .startDate(startDate)
@@ -439,4 +439,8 @@ class EventCouponServiceIntegrationTest extends ServiceConfig {
             Long productOptionId,
             Long couponId
     ) {}
+
+    private String uniqueCouponName(String prefix) {
+        return prefix + "_" + System.nanoTime();
+    }
 }

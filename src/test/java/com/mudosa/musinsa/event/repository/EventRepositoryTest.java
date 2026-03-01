@@ -9,6 +9,7 @@ import com.mudosa.musinsa.event.model.EventStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -18,6 +19,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("EventRepository 테스트")
+@Transactional
 class EventRepositoryTest extends ServiceConfig {
 
     @Autowired
@@ -184,7 +186,7 @@ class EventRepositoryTest extends ServiceConfig {
         LocalDateTime endedAt = LocalDateTime.of(2025, 12, 20, 23, 59);
 
         Coupon coupon = Coupon.builder()
-                .couponName("테스트 쿠폰")
+                .couponName(uniqueCouponName("테스트 쿠폰"))
                 .discountType(DiscountType.AMOUNT)
                 .discountValue(new BigDecimal("10000"))
                 .startDate(startedAt)
@@ -242,5 +244,9 @@ class EventRepositoryTest extends ServiceConfig {
 
         // then
         assertThat(discountEvents).isEmpty();
+    }
+
+    private String uniqueCouponName(String prefix) {
+        return prefix + "_" + System.nanoTime();
     }
 }

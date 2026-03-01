@@ -43,7 +43,7 @@ class CouponIssuanceServiceTest extends ServiceConfig {
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
         Coupon coupon = Coupon.builder()
-                .couponName("발급 테스트 쿠폰")
+                .couponName(uniqueCouponName("발급 테스트 쿠폰"))
                 .discountType(DiscountType.AMOUNT)
                 .discountValue(new BigDecimal("5000"))
                 .startDate(startDate)
@@ -71,7 +71,7 @@ class CouponIssuanceServiceTest extends ServiceConfig {
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
         Coupon coupon = Coupon.builder()
-                .couponName("중복 테스트 쿠폰")
+                .couponName(uniqueCouponName("중복 테스트 쿠폰"))
                 .discountType(DiscountType.AMOUNT)
                 .discountValue(new BigDecimal("5000"))
                 .startDate(startDate)
@@ -114,7 +114,7 @@ class CouponIssuanceServiceTest extends ServiceConfig {
         LocalDateTime startDate = LocalDateTime.now().plusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
         Coupon coupon = Coupon.builder()
-                .couponName("기간 외 쿠폰")
+                .couponName(uniqueCouponName("기간 외 쿠폰"))
                 .discountType(DiscountType.AMOUNT)
                 .discountValue(new BigDecimal("5000"))
                 .startDate(startDate)
@@ -137,7 +137,7 @@ class CouponIssuanceServiceTest extends ServiceConfig {
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
         Coupon coupon = Coupon.builder()
-                .couponName("조회 테스트 쿠폰")
+                .couponName(uniqueCouponName("조회 테스트 쿠폰"))
                 .discountType(DiscountType.AMOUNT)
                 .discountValue(new BigDecimal("5000"))
                 .startDate(startDate)
@@ -164,7 +164,7 @@ class CouponIssuanceServiceTest extends ServiceConfig {
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now().plusDays(30);
         Coupon coupon = Coupon.builder()
-                .couponName("카운트 테스트 쿠폰")
+                .couponName(uniqueCouponName("카운트 테스트 쿠폰"))
                 .discountType(DiscountType.AMOUNT)
                 .discountValue(new BigDecimal("5000"))
                 .startDate(startDate)
@@ -208,5 +208,8 @@ class CouponIssuanceServiceTest extends ServiceConfig {
         // then
         assertThat(count).isEqualTo(0);
     }
-}
 
+    private String uniqueCouponName(String prefix) {
+        return prefix + "_" + System.nanoTime();
+    }
+}
