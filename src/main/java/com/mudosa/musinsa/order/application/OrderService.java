@@ -62,6 +62,13 @@ public class OrderService {
             throw new BusinessException(ErrorCode.PRODUCT_OPTION_NOT_FOUND);
         }
 
+        boolean hasUnavailableProduct = productOptions.stream()
+                .map(ProductOption::getProduct)
+                .anyMatch(product -> product == null || !Boolean.TRUE.equals(product.getIsAvailable()));
+        if (hasUnavailableProduct) {
+            throw new BusinessException(ErrorCode.INVALID_PRODUCT_ORDER);
+        }
+
         Map<Long, Integer> quantityMap = request.getItems().stream()
                 .collect(Collectors.toMap(
                         OrderCreateItem::getProductOptionId,
@@ -105,14 +112,34 @@ public class OrderService {
         List<OrderItem> items = orderRepository.findOrderItems(orderNo);
         applyOptionsToItems(items);
 
+        String shippingName = order.getShippingName();
+        String shippingAddress = order.getShippingAddress();
+        String shippingPhone = order.getShippingPhone();
+
+        if (shippingName == null || shippingAddress == null || shippingPhone == null) {
+            // Legacy rows may not contain shipping snapshot fields.
+            User fallbackUser = userRepository.findById(order.getUserId()).orElse(null);
+            if (fallbackUser != null) {
+                if (shippingName == null) {
+                    shippingName = fallbackUser.getUserName();
+                }
+                if (shippingAddress == null) {
+                    shippingAddress = fallbackUser.getCurrentAddress();
+                }
+                if (shippingPhone == null) {
+                    shippingPhone = fallbackUser.getContactNumber();
+                }
+            }
+        }
+
         return new PendingOrderResponse(
                 orderNo,
                 order.getTotalPrice().getAmount(),
                 order.getTotalDiscount().getAmount(),
                 items,
-                order.getShippingName(),
-                order.getShippingAddress(),
-                order.getShippingPhone()
+                shippingName,
+                shippingAddress,
+                shippingPhone
         );
     }
 

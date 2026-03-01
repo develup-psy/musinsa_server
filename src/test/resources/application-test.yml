@@ -65,3 +65,6 @@ payment:
   queue:
     worker:
       enabled: false
+
+inventory:
+  stock-strategy: redisson_lock

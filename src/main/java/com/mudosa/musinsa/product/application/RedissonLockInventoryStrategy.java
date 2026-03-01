@@ -27,7 +27,7 @@ public class RedissonLockInventoryStrategy implements InventoryStockStrategy {
     private final ProductOptionRepository productOptionRepository;
 
     @Override
-    @DistributedMultiLock(keys = "#optionIds")
+    @DistributedMultiLock(keys = "#optionIds", waitTime = 30, leaseTime = 10)
     @Transactional(propagation = Propagation.MANDATORY)
     public void decreaseStock(String orderNo, List<Long> optionIds, Map<Long, Integer> quantityMap) {
         List<ProductOption> productOptions = productOptionRepository.findByProductOptionIdIn(optionIds);
@@ -61,7 +61,7 @@ public class RedissonLockInventoryStrategy implements InventoryStockStrategy {
     }
 
     @Override
-    @DistributedMultiLock(keys = "#optionIds")
+    @DistributedMultiLock(keys = "#optionIds", waitTime = 30, leaseTime = 10)
     @Transactional(propagation = Propagation.MANDATORY)
     public void restoreStock(String orderNo, List<Long> optionIds, Map<Long, Integer> quantityMap) {
         List<ProductOption> productOptions = productOptionRepository.findByProductOptionIdIn(optionIds);

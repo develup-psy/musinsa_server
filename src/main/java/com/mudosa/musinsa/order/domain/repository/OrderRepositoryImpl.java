@@ -58,10 +58,7 @@ public class OrderRepositoryImpl implements OrderRepositoryCustom {
         Long count = queryFactory
                 .select(order.count())
                 .from(order)
-                .where(
-                        order.userId.eq(userId),
-                        order.status.ne(OrderStatus.PENDING)
-                )
+                .where(order.userId.eq(userId))
                 .fetchOne();
         return count != null ? count : 0L;
     }
@@ -72,10 +69,7 @@ public class OrderRepositoryImpl implements OrderRepositoryCustom {
         List<Long> orderIds = queryFactory
                 .select(order.id)
                 .from(order)
-                .where(
-                        order.userId.eq(userId),
-                        order.status.ne(OrderStatus.PENDING)
-                )
+                .where(order.userId.eq(userId))
                 .orderBy(order.registeredAt.desc())
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())

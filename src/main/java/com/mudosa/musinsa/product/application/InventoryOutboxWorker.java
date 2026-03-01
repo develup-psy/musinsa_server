@@ -20,7 +20,6 @@ import java.util.List;
 @RequiredArgsConstructor
 @ConditionalOnExpression(
         "'${inventory.stock-strategy:redis_atomic_outbox}' == 'redis_atomic_outbox' " +
-        "and '${payment.queue.worker.enabled:true}' == 'true' " +
         "and '${inventory.outbox.worker.enabled:true}' == 'true'"
 )
 public class InventoryOutboxWorker {
