@@ -1,13 +1,13 @@
-package com.mudosa.musinsa.domain.chat.repository;
+package com.mudosa.musinsa.chat.repository;
 
 import com.mudosa.musinsa.ServiceConfig;
 import com.mudosa.musinsa.brand.domain.model.Brand;
 import com.mudosa.musinsa.brand.domain.model.BrandStatus;
-import com.mudosa.musinsa.domain.chat.entity.ChatPart;
-import com.mudosa.musinsa.domain.chat.entity.ChatRoom;
-import com.mudosa.musinsa.domain.chat.entity.Message;
-import com.mudosa.musinsa.domain.chat.enums.ChatPartRole;
-import com.mudosa.musinsa.domain.chat.enums.ChatRoomType;
+import com.mudosa.musinsa.chat.entity.ChatPart;
+import com.mudosa.musinsa.chat.entity.ChatRoom;
+import com.mudosa.musinsa.chat.entity.Message;
+import com.mudosa.musinsa.chat.enums.ChatPartRole;
+import com.mudosa.musinsa.chat.enums.ChatRoomType;
 import com.mudosa.musinsa.user.domain.model.User;
 import com.mudosa.musinsa.user.domain.model.UserRole;
 import lombok.extern.slf4j.Slf4j;

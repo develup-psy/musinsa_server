@@ -1,10 +1,10 @@
 package com.mudosa.musinsa;
 
 import com.mudosa.musinsa.brand.domain.repository.BrandRepository;
-import com.mudosa.musinsa.domain.chat.repository.ChatPartRepository;
-import com.mudosa.musinsa.domain.chat.repository.ChatRoomRepository;
-import com.mudosa.musinsa.domain.chat.repository.MessageAttachmentRepository;
-import com.mudosa.musinsa.domain.chat.repository.MessageRepository;
+import com.mudosa.musinsa.chat.repository.ChatPartRepository;
+import com.mudosa.musinsa.chat.repository.ChatRoomRepository;
+import com.mudosa.musinsa.chat.repository.MessageAttachmentRepository;
+import com.mudosa.musinsa.chat.repository.MessageRepository;
 import com.mudosa.musinsa.notification.model.Notification;
 import com.mudosa.musinsa.notification.model.NotificationMetadata;
 import com.mudosa.musinsa.notification.repository.NotificationMetadataRepository;

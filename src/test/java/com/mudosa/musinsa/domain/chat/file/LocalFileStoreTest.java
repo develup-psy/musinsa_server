@@ -1,4 +1,4 @@
-//package com.mudosa.musinsa.domain.chat.file;
+//package com.mudosa.musinsa.chat.file;
 //
 //import com.mudosa.musinsa.ServiceConfig;
 //import org.junit.jupiter.api.DisplayName;

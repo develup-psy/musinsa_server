@@ -1,6 +1,6 @@
-package com.mudosa.musinsa.domain.chat.controller;
+package com.mudosa.musinsa.chat.controller;
 
-import com.mudosa.musinsa.domain.chat.service.ChatService;
+import com.mudosa.musinsa.chat.service.ChatService;
 import com.mudosa.musinsa.settlement.domain.repository.SettlementDailyMapper;
 import com.mudosa.musinsa.settlement.domain.repository.SettlementMonthlyMapper;
 import com.mudosa.musinsa.settlement.domain.repository.SettlementPerTransactionMapper;
