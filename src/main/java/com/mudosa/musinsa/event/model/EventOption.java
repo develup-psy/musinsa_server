@@ -58,17 +58,29 @@ public class EventOption extends BaseEntity {
     @Builder.Default
     private Integer eventStock = 0;
 
+    public Integer getEventStock() {
+        return eventStock == null ? 0 : eventStock;
+    }
+
     /** Event 편의 메서드에서 호출 (Event.addEventOption) */
     void assignEvent(Event event) {
         this.event = event;
     }
 
+    @PrePersist
+    @PreUpdate
+    void normalizeStock() {
+        if (eventStock == null) {
+            eventStock = 0;
+        }
+    }
+
     /** 재고 증감 유틸 (선택) */
     public void increaseStock(int qty) {
-        this.eventStock += qty;
+        this.eventStock = getEventStock() + qty;
     }
     public void decreaseStock(int qty) {
-        int next = this.eventStock - qty;
+        int next = getEventStock() - qty;
         if (next < 0) {
             throw new IllegalStateException("이벤트 재고가 부족합니다.");
         }

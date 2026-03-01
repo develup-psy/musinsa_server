@@ -67,6 +67,7 @@ public class CouponIssuanceService {
       3. DB비관적 락으로 재고 보호
      ========================================*/
 
+    @Transactional
     public CouponIssuanceResDto issueCoupon(Long userId, Long couponId) {
 
         // 1. Redis로 초고속 중복 체크
@@ -121,7 +122,7 @@ public class CouponIssuanceService {
 
             }
 
-            return issueCouponWithLock(userId, couponId,issueKey,userIdStr);
+            return issueCouponWithLock(userId, couponId, issueKey, userIdStr);
 
         }catch (InterruptedException e){
 
@@ -140,8 +141,7 @@ public class CouponIssuanceService {
 
     }
 
-    // 여기서 트랜잭션 시작 ( DB 커넥션 사용 ) 
-    @Transactional
+    // issueCoupon() 트랜잭션 안에서 실행
     public CouponIssuanceResDto issueCouponWithLock(Long userId, Long couponId, String issueKey, String userIdStr) {
 
 
@@ -283,4 +283,3 @@ public class CouponIssuanceService {
 
 
 }
-
