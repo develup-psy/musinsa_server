@@ -62,6 +62,13 @@ public class OrderService {
             throw new BusinessException(ErrorCode.PRODUCT_OPTION_NOT_FOUND);
         }
 
+        boolean hasUnavailableProduct = productOptions.stream()
+                .map(ProductOption::getProduct)
+                .anyMatch(product -> product == null || !Boolean.TRUE.equals(product.getIsAvailable()));
+        if (hasUnavailableProduct) {
+            throw new BusinessException(ErrorCode.INVALID_PRODUCT_ORDER);
+        }
+
         Map<Long, Integer> quantityMap = request.getItems().stream()
                 .collect(Collectors.toMap(
                         OrderCreateItem::getProductOptionId,
@@ -105,14 +112,34 @@ public class OrderService {
         List<OrderItem> items = orderRepository.findOrderItems(orderNo);
         applyOptionsToItems(items);
 
+        String shippingName = order.getShippingName();
+        String shippingAddress = order.getShippingAddress();
+        String shippingPhone = order.getShippingPhone();
+
+        if (shippingName == null || shippingAddress == null || shippingPhone == null) {
+            // Legacy rows may not contain shipping snapshot fields.
+            User fallbackUser = userRepository.findById(order.getUserId()).orElse(null);
+            if (fallbackUser != null) {
+                if (shippingName == null) {
+                    shippingName = fallbackUser.getUserName();
+                }
+                if (shippingAddress == null) {
+                    shippingAddress = fallbackUser.getCurrentAddress();
+                }
+                if (shippingPhone == null) {
+                    shippingPhone = fallbackUser.getContactNumber();
+                }
+            }
+        }
+
         return new PendingOrderResponse(
                 orderNo,
                 order.getTotalPrice().getAmount(),
                 order.getTotalDiscount().getAmount(),
                 items,
-                order.getShippingName(),
-                order.getShippingAddress(),
-                order.getShippingPhone()
+                shippingName,
+                shippingAddress,
+                shippingPhone
         );
     }
 
@@ -140,19 +167,14 @@ public class OrderService {
         Order order = orderRepository.findByOrderNo(orderNo)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
 
-        List<OrderItem> cacheData = orderRepository.findOrderItems(orderNo);
-
-        List<Long> optionIds = cacheData.stream()
-                .map(OrderItem::getProductOptionId)
-                .toList();
-
         Map<Long, Integer> quantityMap = order.getOrderProducts().stream()
                 .collect(Collectors.toMap(
                         OrderProduct::getProductOptionId,
                         OrderProduct::getProductQuantity
                 ));
 
-        inventoryService.decreaseStock(optionIds, quantityMap);
+        List<Long> optionIds = quantityMap.keySet().stream().toList();
+        inventoryService.decreaseStock(orderNo, optionIds, quantityMap);
 
         order.complete();
         orderRepository.save(order);
@@ -204,13 +226,13 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
 
-        for (OrderProduct orderProduct : order.getOrderProducts()) {
-            ProductOption productOption = productOptionRepository.findById(
-                    orderProduct.getProductOption().getProductOptionId()
-            ).orElseThrow();
+        Map<Long, Integer> quantityMap = order.getOrderProducts().stream()
+                .collect(Collectors.toMap(
+                        OrderProduct::getProductOptionId,
+                        OrderProduct::getProductQuantity
+                ));
 
-            productOption.restoreStock(orderProduct.getProductQuantity());
-        }
+        inventoryService.restoreStock(order.getOrderNo(), quantityMap.keySet().stream().toList(), quantityMap);
 
         order.cancel();
     }
@@ -220,13 +242,13 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
 
-        for (OrderProduct orderProduct : order.getOrderProducts()) {
-            ProductOption productOption = productOptionRepository.findById(
-                    orderProduct.getProductOption().getProductOptionId()
-            ).orElseThrow();
+        Map<Long, Integer> quantityMap = order.getOrderProducts().stream()
+                .collect(Collectors.toMap(
+                        OrderProduct::getProductOptionId,
+                        OrderProduct::getProductQuantity
+                ));
 
-            productOption.decreaseStock(orderProduct.getProductQuantity());
-        }
+        inventoryService.decreaseStock(order.getOrderNo(), quantityMap.keySet().stream().toList(), quantityMap);
 
         order.rollbackToCompleted();
     }
@@ -249,13 +271,13 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
 
-        for (OrderProduct orderProduct : order.getOrderProducts()) {
-            ProductOption productOption = productOptionRepository.findById(
-                    orderProduct.getProductOption().getProductOptionId()
-            ).orElseThrow();
+        Map<Long, Integer> quantityMap = order.getOrderProducts().stream()
+                .collect(Collectors.toMap(
+                        OrderProduct::getProductOptionId,
+                        OrderProduct::getProductQuantity
+                ));
 
-            productOption.restoreStock(orderProduct.getProductQuantity());
-        }
+        inventoryService.restoreStock(order.getOrderNo(), quantityMap.keySet().stream().toList(), quantityMap);
 
         order.rollbackStatus();
         orderRepository.save(order);

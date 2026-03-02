@@ -49,6 +49,9 @@ logging:
       springframework.web.client.RestTemplate: DEBUG
       com.mudosa.musinsa.common.client: DEBUG
 
+inventory:
+  stock-strategy: ${INVENTORY_STOCK_STRATEGY:redis_atomic_outbox}
+
 ---
 spring:
   config:
@@ -76,6 +79,11 @@ logging:
   level:
     root: ${API_LOG_LEVEL_ROOT:info}
     com.mudosa.musinsa.payment: ${API_LOG_LEVEL_PAYMENT:info}
+
+inventory:
+  outbox:
+    worker:
+      enabled: false
 
 ---
 spring:
@@ -118,3 +126,8 @@ logging:
     root: ${WORKER_LOG_LEVEL_ROOT:info}
     com.mudosa.musinsa.payment.application.service.PaymentQueueWorker: ${WORKER_LOG_LEVEL_QUEUE_WORKER:debug}
     com.mudosa.musinsa.payment.application.service.PaymentQueueRecoveryWorker: ${WORKER_LOG_LEVEL_RECOVERY_WORKER:debug}
+
+inventory:
+  outbox:
+    worker:
+      enabled: true

@@ -17,6 +17,8 @@ import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -44,6 +46,7 @@ public class DistributedLockAspect {
         RLock lock = redissonClient.getLock(lockKey);
 
         boolean acquired = false;
+        boolean unlockDeferred = false;
         try {
             acquired = lock.tryLock(distributedLock.waitTime(), distributedLock.leaseTime(), TimeUnit.SECONDS);
             if (!acquired) {
@@ -51,13 +54,15 @@ public class DistributedLockAspect {
             }
 
             log.info("분산락 획득: {}", lockKey);
-            return joinPoint.proceed();
+            Object result = joinPoint.proceed();
+            unlockDeferred = registerUnlockOnTxCompletion(List.of(lock));
+            return result;
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new BusinessException(ErrorCode.LOCK_ACQUISITION);
         } finally {
-            if (acquired && lock.isHeldByCurrentThread()) {
+            if (acquired && !unlockDeferred && lock.isHeldByCurrentThread()) {
                 lock.unlock();
                 log.info("분산락 해제: {}", lockKey);
             }
@@ -76,6 +81,7 @@ public class DistributedLockAspect {
                 .toList();
 
         List<RLock> acquiredLocks = new ArrayList<>();
+        boolean unlockDeferred = false;
 
         try {
             // 순서대로 락 획득
@@ -97,19 +103,40 @@ public class DistributedLockAspect {
                 log.info("분산락 획득: {}", lockKey);
             }
 
-            return joinPoint.proceed();
+            Object result = joinPoint.proceed();
+            unlockDeferred = registerUnlockOnTxCompletion(acquiredLocks);
+            return result;
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new BusinessException(ErrorCode.LOCK_ACQUISITION);
         } finally {
-            // 역순 해제 (LIFO)
-            for (int i = acquiredLocks.size() - 1; i >= 0; i--) {
-                RLock lock = acquiredLocks.get(i);
-                if (lock.isHeldByCurrentThread()) {
-                    lock.unlock();
-                    log.info("분산락 해제");
-                }
+            if (!unlockDeferred) {
+                unlockInReverse(acquiredLocks);
+            }
+        }
+    }
+
+    private boolean registerUnlockOnTxCompletion(List<RLock> acquiredLocks) {
+        if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+            return false;
+        }
+        List<RLock> locksSnapshot = new ArrayList<>(acquiredLocks);
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                unlockInReverse(locksSnapshot);
+            }
+        });
+        return true;
+    }
+
+    private void unlockInReverse(List<RLock> locks) {
+        for (int i = locks.size() - 1; i >= 0; i--) {
+            RLock lock = locks.get(i);
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
+                log.info("분산락 해제");
             }
         }
     }

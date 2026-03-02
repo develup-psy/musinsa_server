@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-@ActiveProfiles("mysql-test")
+@ActiveProfiles("test")
 @Slf4j
 class CouponConcurrencyTest {
 

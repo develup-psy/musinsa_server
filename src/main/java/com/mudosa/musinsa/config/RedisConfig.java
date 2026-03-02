@@ -84,4 +84,20 @@ public class RedisConfig {
     script.setResultType(Long.class);
     return script;
   }
+
+  @Bean
+  public RedisScript<Long> atomicDecreaseStockScript() {
+    DefaultRedisScript<Long> script = new DefaultRedisScript<>();
+    script.setLocation(new ClassPathResource("scripts/decrease-stock-batch.lua"));
+    script.setResultType(Long.class);
+    return script;
+  }
+
+  @Bean
+  public RedisScript<Long> atomicIncreaseStockScript() {
+    DefaultRedisScript<Long> script = new DefaultRedisScript<>();
+    script.setLocation(new ClassPathResource("scripts/increase-stock-batch.lua"));
+    script.setResultType(Long.class);
+    return script;
+  }
 }

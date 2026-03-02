@@ -50,7 +50,8 @@ public class Message {
 
   @Enumerated(EnumType.STRING)
   @Column(name = "status", length = 20, nullable = false)
-  private MessageStatus status;
+  @Builder.Default
+  private MessageStatus status = MessageStatus.NORMAL;
 
   public static Message createMessage(String content, LocalDateTime now, ChatPart chatPart, Message parent, MessageStatus status) {
     return Message.builder()

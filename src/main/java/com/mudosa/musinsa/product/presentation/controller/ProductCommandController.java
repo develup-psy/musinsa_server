@@ -24,7 +24,6 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.util.List;
 
-// 브랜드 관리자가 상품을 생성, 수정, 삭제하고 옵션을 관리하는 엔드포인트를 제공한다.
 @RestController
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('SELLER') or hasRole('ADMIN')")
