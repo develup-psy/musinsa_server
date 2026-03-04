@@ -10,7 +10,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 
 @Configuration
-@EnableConfigurationProperties(PaymentConfirmExecutionProperties.class)
+@EnableConfigurationProperties({
+        PaymentConfirmExecutionProperties.class,
+        PgCircuitBreakerProperties.class
+})
 public class PaymentConfirmExecutionConfig {
 
     @Bean(name = "paymentConfirmExecutor", destroyMethod = "close")

@@ -13,14 +13,15 @@ import org.springframework.stereotype.Service;
 public class PaymentProcessor {
 
     private final PaymentStrategy paymentStrategy;
+    private final PgCircuitBreaker pgCircuitBreaker;
 
     @Observed(name = "pg.processPayment", contextualName = "PG-결제-요청")
     public PaymentResponseDto processPayment(PaymentConfirmRequest request) {
-        return paymentStrategy.confirmPayment(request);
+        return pgCircuitBreaker.execute("confirm", () -> paymentStrategy.confirmPayment(request));
     }
 
     @Observed(name = "pg.processCancelPayment", contextualName = "PG-결제취소-요청")
     public PaymentCancelResponseDto processCancelPayment(PaymentCancelRequest request) {
-        return paymentStrategy.cancelPayment(request);
+        return pgCircuitBreaker.execute("cancel", () -> paymentStrategy.cancelPayment(request));
     }
 }
