@@ -62,6 +62,15 @@ aws:
 
 payment:
   pg-provider: toss
+  confirm-execution:
+    enabled: true
+    virtual-threads-enabled: true
+    platform-thread-pool-size: 32
+    bulkhead:
+      enabled: true
+      permits: 50
+      acquire-timeout-millis: 50
+      fair: true
   queue:
     worker:
       enabled: true
