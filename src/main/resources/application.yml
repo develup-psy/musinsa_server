@@ -102,6 +102,7 @@ pg:
   rate-limit:
     max-requests: 100        # TossPayments Rate Limit (TPS)
     window-millis: 1000
+    redis-key: ${PG_RATE_LIMIT_REDIS_KEY:payment_rate_window:default}
   queue:
     batch-size: 100
     worker-delay-millis: 200

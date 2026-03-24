@@ -31,10 +31,15 @@ public class PaymentService {
     private final PaymentProcessor paymentProcessor;
     private final PaymentConfirmService paymentConfirmService;
     private final PaymentQueueService paymentQueueService;
+    private final PgRateLimiterService pgRateLimiterService;
     private final PaymentRepository paymentRepository;
 
     @Observed(name = "payment.confirmAndCompleteOrder", contextualName = "결제승인")
     public PaymentConfirmResponse confirmPayment(PaymentConfirmRequest request, Long userId) {
+        if (!pgRateLimiterService.tryAcquireRateSlot("sync", request.getOrderNo())) {
+            throw new BusinessException(ErrorCode.PG_RATE_LIMIT_EXCEEDED);
+        }
+
         Long paymentId = null;
         Long orderId = null;
         boolean pgApproved = false;
