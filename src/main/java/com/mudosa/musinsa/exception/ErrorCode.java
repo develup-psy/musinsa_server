@@ -47,6 +47,7 @@ public enum ErrorCode {
   PAYMENT_CANCEL_FAILED("30015","PG사 결제 취소 오류가 발생했습니다",HttpStatus.BAD_REQUEST),
   PAYMENT_QUEUE_FULL("30016", "결제 대기열이 가득 찼습니다. 잠시 후 다시 시도해주세요.", HttpStatus.TOO_MANY_REQUESTS),
   PG_RATE_LIMIT_EXCEEDED("30017", "결제 요청이 일시적으로 집중되었습니다. 잠시 후 다시 시도해주세요.", HttpStatus.TOO_MANY_REQUESTS),
+  PAYMENT_PROVIDER_UNAVAILABLE("30018", "결제사 응답이 불안정하여 잠시 후 재시도가 필요합니다.", HttpStatus.SERVICE_UNAVAILABLE),
 
   //order
   ORDER_NOT_FOUND("40001", "존재하지 않는 주문입니다", HttpStatus.NOT_FOUND),

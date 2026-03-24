@@ -62,6 +62,12 @@ aws:
 
 payment:
   pg-provider: toss
+  pg-circuit-breaker:
+    enabled: ${PAYMENT_PG_CB_ENABLED:true}
+    failure-threshold: ${PAYMENT_PG_CB_FAILURE_THRESHOLD:5}
+    open-state-duration-millis: ${PAYMENT_PG_CB_OPEN_STATE_DURATION_MILLIS:10000}
+    half-open-max-calls: ${PAYMENT_PG_CB_HALF_OPEN_MAX_CALLS:3}
+    half-open-success-threshold: ${PAYMENT_PG_CB_HALF_OPEN_SUCCESS_THRESHOLD:2}
   queue:
     worker:
       enabled: true
@@ -70,6 +76,24 @@ app:
   file-store:
     provider: ${FILE_STORE_PROVIDER:local}
     mode: ${FILE_STORE_MODE:async}
+  datasource:
+    routing:
+      enabled: ${DB_ROUTING_ENABLED:false}
+      read-only-to-replica-enabled: ${DB_READONLY_TO_REPLICA_ENABLED:true}
+      replica-health-check-interval-millis: ${DB_REPLICA_HEALTH_CHECK_INTERVAL_MILLIS:5000}
+      replica-validation-timeout-seconds: ${DB_REPLICA_VALIDATION_TIMEOUT_SECONDS:2}
+    replica:
+      enabled: ${DB_REPLICA_ENABLED:false}
+      url: ${DB_REPLICA_URL:}
+      username: ${DB_REPLICA_USERNAME:}
+      password: ${DB_REPLICA_PASSWORD:}
+      driver-class-name: ${DB_REPLICA_DRIVER_CLASS_NAME:com.mysql.cj.jdbc.Driver}
+      hikari:
+        maximum-pool-size: ${DB_REPLICA_HIKARI_MAX_POOL_SIZE:50}
+        minimum-idle: ${DB_REPLICA_HIKARI_MIN_IDLE:10}
+        connection-timeout: ${DB_REPLICA_HIKARI_CONNECTION_TIMEOUT:3000}
+        max-lifetime: ${DB_REPLICA_HIKARI_MAX_LIFETIME:270000}
+        keepalive-time: ${DB_REPLICA_HIKARI_KEEPALIVE_TIME:240000}
 
 fcm:
   enabled: ${FCM_ENABLED:false}

@@ -40,7 +40,6 @@ public class PaymentController {
 
 		Long userId = userDetails.getUserId();
 		PaymentConfirmResponse response = paymentService.confirmPayment(request, userId);
-
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}
 
