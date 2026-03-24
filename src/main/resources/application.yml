@@ -68,15 +68,6 @@ payment:
     open-state-duration-millis: ${PAYMENT_PG_CB_OPEN_STATE_DURATION_MILLIS:10000}
     half-open-max-calls: ${PAYMENT_PG_CB_HALF_OPEN_MAX_CALLS:3}
     half-open-success-threshold: ${PAYMENT_PG_CB_HALF_OPEN_SUCCESS_THRESHOLD:2}
-  confirm-execution:
-    enabled: true
-    virtual-threads-enabled: true
-    platform-thread-pool-size: 32
-    bulkhead:
-      enabled: true
-      permits: 50
-      acquire-timeout-millis: 50
-      fair: true
   queue:
     worker:
       enabled: true

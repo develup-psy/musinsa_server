@@ -7,7 +7,6 @@ import com.mudosa.musinsa.payment.application.dto.response.PaymentCancelResponse
 import com.mudosa.musinsa.payment.application.dto.response.PaymentConfirmResponse;
 import com.mudosa.musinsa.payment.application.dto.response.PaymentQueueResponse;
 import com.mudosa.musinsa.payment.application.dto.response.PaymentStatusResponse;
-import com.mudosa.musinsa.payment.application.service.PaymentConfirmExecutionService;
 import com.mudosa.musinsa.payment.application.service.PaymentService;
 import com.mudosa.musinsa.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,7 +20,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
-import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Tag(name = "Payment", description = "결제 API")
@@ -31,19 +29,18 @@ import java.util.concurrent.CompletableFuture;
 public class PaymentController {
 
 	private final PaymentService paymentService;
-	private final PaymentConfirmExecutionService paymentConfirmExecutionService;
 
 	@Operation(
 			summary = "결제 승인",
 			description = "결제 승인 요청")
 	@PostMapping("/confirm")
-	public CompletableFuture<ResponseEntity<ApiResponse<PaymentConfirmResponse>>> confirmPayment(
+	public ResponseEntity<ApiResponse<PaymentConfirmResponse>> confirmPayment(
 			@AuthenticationPrincipal CustomUserDetails userDetails,
 			@Valid @RequestBody PaymentConfirmRequest request) {
 
 		Long userId = userDetails.getUserId();
-		return paymentConfirmExecutionService.execute(() -> paymentService.confirmPayment(request, userId))
-				.thenApply(response -> ResponseEntity.ok(ApiResponse.success(response)));
+		PaymentConfirmResponse response = paymentService.confirmPayment(request, userId);
+		return ResponseEntity.ok(ApiResponse.success(response));
 	}
 
 	@Operation(
