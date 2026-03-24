@@ -5,11 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mudosa.musinsa.exception.BusinessException;
 import com.mudosa.musinsa.exception.ErrorCode;
 import com.mudosa.musinsa.payment.application.dto.EnqueueResult;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.data.redis.core.script.RedisScript;
@@ -19,7 +18,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 
 @Slf4j
 @Component
@@ -27,24 +25,17 @@ import java.util.UUID;
 public class PaymentQueueService {
 
     private final StringRedisTemplate redisTemplate;
+
     @Qualifier("enqueuePaymentScript")
     private final RedisScript<String> enqueuePaymentScript;
-    @Qualifier("acquireRateSlotScript")
-    private final RedisScript<Long> acquireRateSlotScript;
+
+    private final PgRateLimiterService pgRateLimiterService;
     private final ObjectMapper objectMapper;
 
     @Value("${pg.queue.batch-size:100}")
     private int batchSize;
 
-    @Getter
-    @Value("${pg.rate-limit.max-requests:100}")
-    private long maxRequests;
-
-    @Value("${pg.rate-limit.window-millis:1000}")
-    private long windowMillis;
-
     private static final String DEFAULT_QUEUE_KEY = "payment_queue:default";
-    private static final String DEFAULT_RATE_WINDOW_KEY = "payment_rate_window:default";
 
     public EnqueueResult enqueue(Long paymentId, LocalDateTime createdAt) {
         double score = toEpochMillis(createdAt);
@@ -71,24 +62,12 @@ public class PaymentQueueService {
         return redisTemplate.opsForZSet().rank(DEFAULT_QUEUE_KEY, paymentId.toString());
     }
 
-    public boolean tryAcquireRateSlot(Long paymentId) {
-        long nowMillis = System.currentTimeMillis();
-        String member = paymentId + ":" + UUID.randomUUID();
+    public long getMaxRequests() {
+        return pgRateLimiterService.getMaxRequests();
+    }
 
-        try {
-            Long result = redisTemplate.execute(
-                    acquireRateSlotScript,
-                    List.of(DEFAULT_RATE_WINDOW_KEY),
-                    String.valueOf(nowMillis),
-                    String.valueOf(windowMillis),
-                    String.valueOf(maxRequests),
-                    member
-            );
-            return result != null && result == 1L;
-        } catch (Exception e) {
-            log.error("Rate slot 획득 실패: paymentId={}", paymentId, e);
-            return false;
-        }
+    public boolean tryAcquireRateSlot(Long paymentId) {
+        return pgRateLimiterService.tryAcquireRateSlot("queue", String.valueOf(paymentId));
     }
 
     public void requeue(Long paymentId, Double score) {
@@ -100,7 +79,7 @@ public class PaymentQueueService {
         if (rank == null) {
             return null;
         }
-        return (rank / maxRequests) + 1;
+        return (rank / getMaxRequests()) + 1;
     }
 
     private double toEpochMillis(LocalDateTime dateTime) {
