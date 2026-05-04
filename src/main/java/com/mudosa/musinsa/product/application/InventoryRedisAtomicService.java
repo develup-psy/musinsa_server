@@ -3,10 +3,11 @@ package com.mudosa.musinsa.product.application;
 import com.mudosa.musinsa.exception.BusinessException;
 import com.mudosa.musinsa.exception.ErrorCode;
 import com.mudosa.musinsa.product.domain.model.ProductOption;
+import com.mudosa.musinsa.product.domain.repository.InventoryOutboxEventRepository;
 import com.mudosa.musinsa.product.domain.repository.ProductOptionRepository;
+import org.springframework.beans.factory.annotation.Qualifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Component;
@@ -23,8 +24,10 @@ public class InventoryRedisAtomicService {
 
     private static final String STOCK_KEY_PREFIX = "inventory:stock:option:";
 
+    @Qualifier("inventoryStringRedisTemplate")
     private final StringRedisTemplate stringRedisTemplate;
     private final ProductOptionRepository productOptionRepository;
+    private final InventoryOutboxEventRepository inventoryOutboxEventRepository;
 
     @Qualifier("atomicDecreaseStockScript")
     private final RedisScript<Long> atomicDecreaseStockScript;
@@ -118,12 +121,25 @@ public class InventoryRedisAtomicService {
             stockMap.put(productOption.getProductOptionId(), stock);
         }
 
+        // Redis가 유실된 경우 DB 스냅샷 + 미처리 Outbox 델타로 재구성한다.
+        Map<Long, Integer> unprocessedDeltaMap =
+                inventoryOutboxEventRepository.aggregateUnprocessedDeltaByOptionIds(optionIds);
+
         for (Long optionId : optionIds) {
-            Integer stock = stockMap.get(optionId);
-            if (stock == null) {
+            Integer baseStock = stockMap.get(optionId);
+            if (baseStock == null) {
                 throw new BusinessException(ErrorCode.PRODUCT_OPTION_NOT_FOUND);
             }
-            stringRedisTemplate.opsForValue().setIfAbsent(toStockKey(optionId), String.valueOf(stock));
+
+            int delta = unprocessedDeltaMap.getOrDefault(optionId, 0);
+            long reconstructed = (long) baseStock + delta;
+            if (reconstructed < 0) {
+                log.warn("재고 재구성 결과 음수 보정: optionId={}, baseStock={}, delta={}",
+                        optionId, baseStock, delta);
+                reconstructed = 0;
+            }
+
+            stringRedisTemplate.opsForValue().setIfAbsent(toStockKey(optionId), String.valueOf(reconstructed));
         }
     }
 

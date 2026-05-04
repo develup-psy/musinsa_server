@@ -79,7 +79,27 @@ public class OrderRepositoryImpl implements OrderRepositoryCustom {
             return Collections.emptyList();
         }
 
-        return fetchOrderDetailsByOrderIds(orderIds);
+        return  queryFactory
+                .select(new QOrderDetail(
+                        order.orderNo,
+                        order.status,
+                        order.registeredAt,
+                        order.totalPrice.amount,
+                        productOption.productOptionId,
+                        brand.nameKo,
+                        product.productName,
+                        productOption.productPrice.amount,
+                        orderProduct.productQuantity,
+                        createThumbnailImageSubquery()
+                ))
+                .from(order)
+                .join(order.orderProducts, orderProduct)
+                .join(orderProduct.productOption, productOption)
+                .join(productOption.product, product)
+                .join(product.brand, brand)
+                .where(order.id.in(orderIds))
+                .orderBy(order.registeredAt.desc())
+                .fetch();
     }
 
 
@@ -117,10 +137,6 @@ public class OrderRepositoryImpl implements OrderRepositoryCustom {
             return Collections.emptyList();
         }
 
-        return fetchOrderDetailsByOrderIds(orderIds);
-    }
-
-    private List<OrderDetail> fetchOrderDetailsByOrderIds(List<Long> orderIds) {
         return queryFactory
                 .select(new QOrderDetail(
                         order.orderNo,

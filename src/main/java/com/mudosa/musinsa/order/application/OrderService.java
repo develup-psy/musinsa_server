@@ -50,7 +50,6 @@ public class OrderService {
     @Observed(name = "order.create", contextualName = "주문 생성")
     @Transactional
     public OrderCreateResponse createPendingOrder(OrderCreateRequest request, Long userId) {
-
         List<Long> optionIds = request.getItems().stream()
                 .map(OrderCreateItem::getProductOptionId)
                 .toList();
@@ -78,7 +77,8 @@ public class OrderService {
         Map<ProductOption, Integer> optionsWithQuantity = productOptions.stream()
                 .collect(Collectors.toMap(
                         option -> option,
-                        option -> quantityMap.get(option.getProductOptionId())
+                        option -> quantityMap.get(option.getProductOptionId()),
+                        (existingValue, newValue) -> existingValue
                 ));
 
         List<InsufficientStockItem> insufficientItems = optionsWithQuantity.entrySet().stream()
@@ -117,7 +117,6 @@ public class OrderService {
         String shippingPhone = order.getShippingPhone();
 
         if (shippingName == null || shippingAddress == null || shippingPhone == null) {
-            // Legacy rows may not contain shipping snapshot fields.
             User fallbackUser = userRepository.findById(order.getUserId()).orElse(null);
             if (fallbackUser != null) {
                 if (shippingName == null) {

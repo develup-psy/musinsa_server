@@ -30,7 +30,6 @@ public class PaymentService {
 
     private final PaymentProcessor paymentProcessor;
     private final PaymentConfirmService paymentConfirmService;
-    private final PaymentQueueService paymentQueueService;
     private final PgRateLimiterService pgRateLimiterService;
     private final PaymentRepository paymentRepository;
 
@@ -90,7 +89,9 @@ public class PaymentService {
 
     private boolean isPgRelatedError(ErrorCode errorCode) {
         return errorCode == PAYMENT_APPROVAL_FAILED
-                || errorCode == PAYMENT_TIMEOUT;
+                || errorCode == PAYMENT_TIMEOUT
+                || errorCode == ErrorCode.PAYMENT_PROVIDER_UNAVAILABLE
+                || errorCode == ErrorCode.PG_RATE_LIMIT_EXCEEDED;
     }
 
     @Observed(name = "payment.confirmPaymentAsync", contextualName = "결제승인-대기열")
@@ -107,24 +108,10 @@ public class PaymentService {
 
             paymentId = creationResult.getPaymentId();
 
-            Long queuePosition = null;
-            Long estimatedWaitSeconds = null;
-
-            try {
-                EnqueueResult enqueueResult = paymentQueueService.enqueue(paymentId, creationResult.getCreatedAt());
-                if (enqueueResult.getRank() >= 0) {
-                    queuePosition = enqueueResult.getRank() + 1;
-                    estimatedWaitSeconds = enqueueResult.estimateWaitSeconds(paymentQueueService.getMaxRequests());
-                }
-            } catch (Exception e) {
-                log.warn("Redis 대기열 등록 실패. DB 기준 수용 유지: paymentId={}", paymentId, e);
-            }
-
             return PaymentQueueResponse.builder()
                     .ticketId(paymentId)
-                    .queuePosition(queuePosition)
-                    .estimatedWaitSeconds(estimatedWaitSeconds)
-                    .status("QUEUED")
+                    .status("ACCEPTED")
+                    .message("결제 요청이 접수되었습니다.")
                     .orderNo(request.getOrderNo())
                     .build();
 
@@ -148,22 +135,11 @@ public class PaymentService {
         }
 
         return switch (payment.getStatus()) {
-            case QUEUED -> buildQueuedResponse(paymentId);
+            case QUEUED -> PaymentStatusResponse.queued();
             case APPROVED -> PaymentStatusResponse.approved(payment);
             case FAILED -> PaymentStatusResponse.failed(extractFailReason(payment));
             default -> PaymentStatusResponse.pending();
         };
-    }
-
-    private PaymentStatusResponse buildQueuedResponse(Long paymentId) {
-        try {
-            Long position = paymentQueueService.getPosition(paymentId);
-            Long waitSeconds = paymentQueueService.estimateWaitSeconds(position);
-            return PaymentStatusResponse.queued(position, waitSeconds);
-        } catch (Exception e) {
-            log.warn("대기 순번 조회 실패. DB 기준 QUEUED 반환: paymentId={}", paymentId, e);
-            return PaymentStatusResponse.queued(null, null);
-        }
     }
 
     private String extractFailReason(Payment payment) {

@@ -160,5 +160,6 @@ springdoc:
 logging:
   level:
     root: ${WORKER_LOG_LEVEL_ROOT:info}
-    com.mudosa.musinsa.payment.application.service.PaymentQueueWorker: ${WORKER_LOG_LEVEL_QUEUE_WORKER:info}
+    com.mudosa.musinsa.payment.application.service.PaymentQueueConsumer: ${WORKER_LOG_LEVEL_QUEUE_CONSUMER:info}
+    com.mudosa.musinsa.payment.application.service.PaymentQueueOutboxPublisherWorker: ${WORKER_LOG_LEVEL_QUEUE_PUBLISHER:info}
     com.mudosa.musinsa.payment.application.service.PaymentQueueRecoveryWorker: ${WORKER_LOG_LEVEL_RECOVERY_WORKER:info}

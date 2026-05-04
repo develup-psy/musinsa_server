@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 
 @Slf4j
 @Service
@@ -28,6 +29,7 @@ public class PaymentConfirmService {
     private final OrderService orderService;
     private final PaymentRepository paymentRepository;
     private final PaymentCompensationService paymentCompensationService;
+    private final PaymentQueueOutboxService paymentQueueOutboxService;
 
     @Observed(name = "payment.transaction.create", contextualName = "결제-트랜잭션-생성")
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -75,8 +77,8 @@ public class PaymentConfirmService {
                     userId
             );
 
-            // DB 제약 조건 오류(중복키 등)를 메서드 내부에서 즉시 감지한다.
             paymentRepository.saveAndFlush(payment);
+            paymentQueueOutboxService.createPendingEvent(payment.getId(), request.getOrderNo());
 
             return PaymentCreationResult.builder()
                     .paymentId(payment.getId())
@@ -135,16 +137,13 @@ public class PaymentConfirmService {
     @Observed(name = "payment.startProcessing", contextualName = "결제-처리시작")
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public boolean startProcessingIfQueued(Long paymentId, Long userId) {
-        Payment payment = paymentRepository.findById(paymentId)
-                .orElse(null);
-
-        if (payment == null || !payment.isQueue()) {
-            return false;
-        }
-
-        payment.startProcessing(userId);
-        paymentRepository.save(payment);
-        return true;
+        int updatedRows = paymentRepository.updateStatusIfCurrent(
+                paymentId,
+                PaymentStatus.QUEUED,
+                PaymentStatus.PENDING,
+                LocalDateTime.now()
+        );
+        return updatedRows == 1;
     }
 
     @Observed(name = "payment.requeue", contextualName = "결제-재대기")

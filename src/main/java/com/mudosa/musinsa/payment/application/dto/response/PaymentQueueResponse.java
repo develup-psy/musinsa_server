@@ -7,8 +7,7 @@ import lombok.Getter;
 @Builder
 public class PaymentQueueResponse {
     private Long ticketId;
-    private Long queuePosition;
-    private Long estimatedWaitSeconds;
     private String status;
+    private String message;
     private String orderNo;
 }

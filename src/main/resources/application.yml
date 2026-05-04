@@ -64,13 +64,36 @@ payment:
   pg-provider: toss
   pg-circuit-breaker:
     enabled: ${PAYMENT_PG_CB_ENABLED:true}
-    failure-threshold: ${PAYMENT_PG_CB_FAILURE_THRESHOLD:5}
-    open-state-duration-millis: ${PAYMENT_PG_CB_OPEN_STATE_DURATION_MILLIS:10000}
-    half-open-max-calls: ${PAYMENT_PG_CB_HALF_OPEN_MAX_CALLS:3}
-    half-open-success-threshold: ${PAYMENT_PG_CB_HALF_OPEN_SUCCESS_THRESHOLD:2}
+    sliding-window-type: ${PAYMENT_PG_CB_SLIDING_WINDOW_TYPE:COUNT_BASED}
+    sliding-window-size: ${PAYMENT_PG_CB_SLIDING_WINDOW_SIZE:20}
+    minimum-number-of-calls: ${PAYMENT_PG_CB_MINIMUM_NUMBER_OF_CALLS:10}
+    failure-rate-threshold: ${PAYMENT_PG_CB_FAILURE_RATE_THRESHOLD:50}
+    wait-duration-in-open-state-millis: ${PAYMENT_PG_CB_WAIT_DURATION_IN_OPEN_STATE_MILLIS:10000}
+    permitted-number-of-calls-in-half-open-state: ${PAYMENT_PG_CB_PERMITTED_NUMBER_OF_CALLS_IN_HALF_OPEN_STATE:3}
+    automatic-transition-from-open-to-half-open-enabled: ${PAYMENT_PG_CB_AUTOMATIC_TRANSITION_TO_HALF_OPEN_ENABLED:true}
   queue:
     worker:
       enabled: true
+    kafka:
+      topic: ${PAYMENT_QUEUE_KAFKA_TOPIC:payment.confirm.queue}
+      group-id: ${PAYMENT_QUEUE_KAFKA_GROUP_ID:payment-queue-consumer}
+      consumer-concurrency: ${PAYMENT_QUEUE_KAFKA_CONSUMER_CONCURRENCY:4}
+    outbox:
+      publisher-delay-millis: ${PAYMENT_QUEUE_OUTBOX_PUBLISHER_DELAY_MILLIS:200}
+      batch-size: ${PAYMENT_QUEUE_OUTBOX_BATCH_SIZE:200}
+      retry:
+        max-retries: ${PAYMENT_QUEUE_OUTBOX_RETRY_MAX_RETRIES:5}
+        initial-delay-millis: ${PAYMENT_QUEUE_OUTBOX_RETRY_INITIAL_DELAY_MILLIS:500}
+        max-delay-millis: ${PAYMENT_QUEUE_OUTBOX_RETRY_MAX_DELAY_MILLIS:30000}
+    recovery:
+      reconcile-delay-millis: ${PAYMENT_QUEUE_RECOVERY_RECONCILE_DELAY_MILLIS:5000}
+      sweeper-delay-millis: ${PAYMENT_QUEUE_RECOVERY_SWEEPER_DELAY_MILLIS:5000}
+      processing-timeout-seconds: ${PAYMENT_QUEUE_RECOVERY_PROCESSING_TIMEOUT_SECONDS:30}
+      republish-threshold-seconds: ${PAYMENT_QUEUE_RECOVERY_REPUBLISH_THRESHOLD_SECONDS:60}
+      reopen-failed-enabled: ${PAYMENT_QUEUE_RECOVERY_REOPEN_FAILED_ENABLED:false}
+    consumer:
+      rate-slot-wait-millis: ${PAYMENT_QUEUE_CONSUMER_RATE_SLOT_WAIT_MILLIS:2000}
+      rate-slot-retry-delay-millis: ${PAYMENT_QUEUE_CONSUMER_RATE_SLOT_RETRY_DELAY_MILLIS:50}
 
 app:
   file-store:
@@ -103,15 +126,14 @@ pg:
     max-requests: 100        # TossPayments Rate Limit (TPS)
     window-millis: 1000
     redis-key: ${PG_RATE_LIMIT_REDIS_KEY:payment_rate_window:default}
-  queue:
-    batch-size: 100
-    worker-delay-millis: 200
-    reconcile-delay-millis: 5000
-    sweeper-delay-millis: 5000
-    processing-timeout-seconds: 30
 
 inventory:
   stock-strategy: ${INVENTORY_STOCK_STRATEGY:redis_atomic_outbox}  # redisson_lock | redis_atomic_outbox
+  redis:
+    host: ${INVENTORY_REDIS_HOST:${spring.data.redis.host}}
+    port: ${INVENTORY_REDIS_PORT:${spring.data.redis.port}}
+    password: ${INVENTORY_REDIS_PASSWORD:${spring.data.redis.password:}}
+    database: ${INVENTORY_REDIS_DATABASE:${spring.data.redis.database}}
   outbox:
     worker:
       enabled: true

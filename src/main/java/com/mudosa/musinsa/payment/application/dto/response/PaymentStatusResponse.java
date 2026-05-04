@@ -10,17 +10,12 @@ import lombok.Getter;
 public class PaymentStatusResponse {
 
     private PaymentStatus status;
-    private Long queuePosition;
-    private Long estimatedWaitSeconds;
     private String orderNo;
     private String failReason;
 
-    public static PaymentStatusResponse queued(Long position, Long estimatedWaitSeconds) {
-        Long queuePosition = position == null ? null : position + 1;
+    public static PaymentStatusResponse queued() {
         return PaymentStatusResponse.builder()
                 .status(PaymentStatus.QUEUED)
-                .queuePosition(queuePosition)
-                .estimatedWaitSeconds(estimatedWaitSeconds)
                 .build();
     }
 

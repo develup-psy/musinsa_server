@@ -2,14 +2,17 @@ package com.mudosa.musinsa.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
@@ -31,18 +34,29 @@ public class RedisConfig {
   @Value("${spring.data.redis.database:0}")
   private int redisDatabase;
 
+  @Value("${inventory.redis.host:${spring.data.redis.host}}")
+  private String inventoryRedisHost;
+
+  @Value("${inventory.redis.port:${spring.data.redis.port}}")
+  private int inventoryRedisPort;
+
+  @Value("${inventory.redis.password:${spring.data.redis.password:}}")
+  private String inventoryRedisPassword;
+
+  @Value("${inventory.redis.database:${spring.data.redis.database:0}}")
+  private int inventoryRedisDatabase;
+
   @Bean
+  @Primary
   public RedisConnectionFactory redisConnectionFactory() {
-    RedisStandaloneConfiguration standaloneConfig = new RedisStandaloneConfiguration();
-    standaloneConfig.setHostName(redisHost);
-    standaloneConfig.setPort(redisPort);
-    standaloneConfig.setDatabase(redisDatabase);
+    return new LettuceConnectionFactory(buildStandaloneConfig(redisHost, redisPort, redisPassword, redisDatabase));
+  }
 
-    if (redisPassword != null && !redisPassword.isEmpty()) {
-      standaloneConfig.setPassword(redisPassword);
-    }
-
-    return new LettuceConnectionFactory(standaloneConfig);
+  @Bean(name = "inventoryRedisConnectionFactory")
+  public RedisConnectionFactory inventoryRedisConnectionFactory() {
+    return new LettuceConnectionFactory(
+            buildStandaloneConfig(inventoryRedisHost, inventoryRedisPort, inventoryRedisPassword, inventoryRedisDatabase)
+    );
   }
 
   @Bean
@@ -50,6 +64,17 @@ public class RedisConfig {
     ObjectMapper mapper = builder.build();
     mapper.registerModule(new JavaTimeModule());
     return mapper;
+  }
+
+  @Bean
+  @Primary
+  public StringRedisTemplate stringRedisTemplate(
+          @Qualifier("redisConnectionFactory") RedisConnectionFactory redisConnectionFactory
+  ) {
+    StringRedisTemplate template = new StringRedisTemplate();
+    template.setConnectionFactory(redisConnectionFactory);
+    template.afterPropertiesSet();
+    return template;
   }
 
   @Bean
@@ -69,12 +94,14 @@ public class RedisConfig {
     return template;
   }
 
-  @Bean
-  public RedisScript<String> enqueuePaymentScript() {
-    DefaultRedisScript<String> script = new DefaultRedisScript<>();
-    script.setLocation(new ClassPathResource("scripts/enqueue-payment.lua"));
-    script.setResultType(String.class);
-    return script;
+  @Bean(name = "inventoryStringRedisTemplate")
+  public StringRedisTemplate inventoryStringRedisTemplate(
+          @Qualifier("inventoryRedisConnectionFactory") RedisConnectionFactory inventoryRedisConnectionFactory
+  ) {
+    StringRedisTemplate template = new StringRedisTemplate();
+    template.setConnectionFactory(inventoryRedisConnectionFactory);
+    template.afterPropertiesSet();
+    return template;
   }
 
   @Bean
@@ -99,5 +126,22 @@ public class RedisConfig {
     script.setLocation(new ClassPathResource("scripts/increase-stock-batch.lua"));
     script.setResultType(Long.class);
     return script;
+  }
+
+  private RedisStandaloneConfiguration buildStandaloneConfig(
+          String host,
+          int port,
+          String password,
+          int database
+  ) {
+    RedisStandaloneConfiguration standaloneConfig = new RedisStandaloneConfiguration();
+    standaloneConfig.setHostName(host);
+    standaloneConfig.setPort(port);
+    standaloneConfig.setDatabase(database);
+
+    if (password != null && !password.isEmpty()) {
+      standaloneConfig.setPassword(password);
+    }
+    return standaloneConfig;
   }
 }

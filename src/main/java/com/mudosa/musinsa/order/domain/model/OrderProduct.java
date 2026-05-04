@@ -32,12 +32,10 @@ public class OrderProduct extends BaseEntity {
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
-    @JsonBackReference
     private Order order;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_option_id", nullable = false)
-    @JsonIgnore
     private ProductOption productOption;
 
     @Embedded

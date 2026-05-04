@@ -20,13 +20,13 @@ import java.util.List;
 public class PaymentQueueRecoveryWorker {
 
     private final PaymentRepository paymentRepository;
-    private final PaymentQueueService paymentQueueService;
+    private final PaymentQueueOutboxService paymentQueueOutboxService;
     private final PaymentConfirmService paymentConfirmService;
 
-    @Value("${pg.queue.processing-timeout-seconds:30}")
+    @Value("${payment.queue.recovery.processing-timeout-seconds:30}")
     private long processingTimeoutSeconds;
 
-    @Scheduled(fixedDelayString = "${pg.queue.reconcile-delay-millis:5000}")
+    @Scheduled(fixedDelayString = "${payment.queue.recovery.reconcile-delay-millis:5000}")
     public void reconcileQueuedPayments() {
         List<Payment> queuedPayments = paymentRepository.findTop200ByStatusOrderByCreatedAtAsc(PaymentStatus.QUEUED);
         if (queuedPayments.isEmpty()) {
@@ -35,14 +35,18 @@ public class PaymentQueueRecoveryWorker {
 
         for (Payment payment : queuedPayments) {
             try {
-                paymentQueueService.enqueue(payment.getId(), payment.getCreatedAt());
+                paymentQueueOutboxService.ensurePendingEvent(
+                        payment.getId(),
+                        payment.getOrderNo(),
+                        "QUEUED 상태 복구 재발행"
+                );
             } catch (Exception e) {
-                log.warn("[PaymentQueueRecovery] 재적재 실패: paymentId={}", payment.getId(), e);
+                log.warn("[PaymentQueueRecovery] outbox 복구 실패: paymentId={}", payment.getId(), e);
             }
         }
     }
 
-    @Scheduled(fixedDelayString = "${pg.queue.sweeper-delay-millis:5000}")
+    @Scheduled(fixedDelayString = "${payment.queue.recovery.sweeper-delay-millis:5000}")
     public void recoverStuckProcessing() {
         LocalDateTime threshold = LocalDateTime.now()
                 .minusSeconds(processingTimeoutSeconds);
@@ -62,7 +66,11 @@ public class PaymentQueueRecoveryWorker {
                         payment.getUserId()
                 );
                 if (requeued) {
-                    paymentQueueService.enqueue(payment.getId(), payment.getCreatedAt());
+                    paymentQueueOutboxService.ensurePendingEvent(
+                            payment.getId(),
+                            payment.getOrderNo(),
+                            "PENDING 타임아웃 재발행"
+                    );
                 }
             } catch (Exception e) {
                 log.error("[PaymentQueueRecovery] 타임아웃 복구 실패: paymentId={}", payment.getId(), e);

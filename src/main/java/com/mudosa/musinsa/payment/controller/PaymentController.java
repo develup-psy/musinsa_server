@@ -59,8 +59,8 @@ public class PaymentController {
 	}
 
 	@Operation(
-			summary = "대기열 기반 결제 승인",
-			description = "대기열 기반 비동기 결제 승인 요청. 대기 순번 및 예상 시간 포함")
+				summary = "대기열 기반 결제 승인",
+				description = "대기열 기반 비동기 결제 승인 요청. 접수 성공 여부를 반환합니다.")
 	@PostMapping("/confirm/queue")
 	public ResponseEntity<ApiResponse<PaymentQueueResponse>> confirmPaymentAsync(
 			@AuthenticationPrincipal CustomUserDetails userDetails,
@@ -74,8 +74,8 @@ public class PaymentController {
 	}
 
 	@Operation(
-			summary = "결제 상태 조회",
-			description = "대기열 결제의 현재 처리 상태를 조회합니다")
+				summary = "결제 상태 조회",
+				description = "비동기 결제의 현재 처리 상태를 조회합니다")
 	@GetMapping("/{paymentId}/status")
 	public ResponseEntity<ApiResponse<PaymentStatusResponse>> getPaymentStatus(
 			@PathVariable Long paymentId,

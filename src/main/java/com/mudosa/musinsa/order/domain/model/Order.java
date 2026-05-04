@@ -34,7 +34,6 @@ public class Order extends BaseEntity {
     private Long couponId;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference
     private List<OrderProduct> orderProducts;
 
     @Enumerated(EnumType.STRING)
