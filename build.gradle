@@ -102,6 +102,7 @@ dependencies {
     implementation 'io.micrometer:micrometer-registry-prometheus'
 
     implementation 'org.apache.httpcomponents.client5:httpclient5'
+    implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.3.0'
 }
 
 sourceSets {

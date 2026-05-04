@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
@@ -118,10 +119,7 @@ public class TossPaymentService {
         log.error("[Toss] 모든 재시도 실패 - orderNo: {}, error: {}",
                 request.getOrderId(),
                 e.getMessage());
-        throw new BusinessException(
-                ErrorCode.PAYMENT_APPROVAL_FAILED,
-                e.getMessage()
-        );
+        throw mapConfirmFailure(e);
     }
 
     @Recover
@@ -141,10 +139,7 @@ public class TossPaymentService {
             TossPaymentCancelRequest request
     ) {
         log.error("[Toss] 취소 재시도 실패 - paymentKey: {}", request.getPaymentKey());
-        throw new BusinessException(
-                ErrorCode.PAYMENT_CANCEL_FAILED,
-                e.getMessage()
-        );
+        throw mapCancelFailure(e);
     }
 
     // 헤더 생성 메서드
@@ -159,6 +154,32 @@ public class TossPaymentService {
         headers.set(HttpHeaders.AUTHORIZATION, "Basic " + encoded);
 
         return headers;
+    }
+
+    private BusinessException mapConfirmFailure(ExternalApiException e) {
+        HttpStatusCode statusCode = e.getHttpStatus();
+        if (statusCode != null) {
+            if (statusCode.value() == HttpStatus.TOO_MANY_REQUESTS.value()) {
+                return new BusinessException(ErrorCode.PG_RATE_LIMIT_EXCEEDED, e.getMessage());
+            }
+            if (statusCode.is4xxClientError()) {
+                return new BusinessException(ErrorCode.PAYMENT_APPROVAL_FAILED, e.getMessage());
+            }
+        }
+        return new BusinessException(ErrorCode.PAYMENT_PROVIDER_UNAVAILABLE, e.getMessage());
+    }
+
+    private BusinessException mapCancelFailure(ExternalApiException e) {
+        HttpStatusCode statusCode = e.getHttpStatus();
+        if (statusCode != null) {
+            if (statusCode.value() == HttpStatus.TOO_MANY_REQUESTS.value()) {
+                return new BusinessException(ErrorCode.PG_RATE_LIMIT_EXCEEDED, e.getMessage());
+            }
+            if (statusCode.is4xxClientError()) {
+                return new BusinessException(ErrorCode.PAYMENT_CANCEL_FAILED, e.getMessage());
+            }
+        }
+        return new BusinessException(ErrorCode.PAYMENT_PROVIDER_UNAVAILABLE, e.getMessage());
     }
 
 }
